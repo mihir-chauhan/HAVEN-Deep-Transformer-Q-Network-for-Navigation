@@ -115,8 +115,3 @@ If you use this code or the paper, please cite:
 }
 ```
 
----
-
-## License
-
-See repository license file.
