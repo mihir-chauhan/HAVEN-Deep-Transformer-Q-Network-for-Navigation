@@ -1,0 +1,105 @@
+\documentclass[10pt, conference, compsocconf, letterpaper]{IEEEtran}
+\IEEEoverridecommandlockouts
+% The preceding line is only needed to identify funding in the first footnote. If that is unneeded, please comment it out.
+\usepackage{todonotes}
+
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\DeclareMathOperator*{\argmax}{arg\,max}
+% \usepackage{algorithmic}
+%\usepackage{algorithm} 
+\usepackage[ruled,vlined,linesnumbered]{algorithm2e}
+\usepackage{algpseudocode} 
+% \usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{subfig}
+\usepackage{multirow}
+ \def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+%\usepackage{enumitem}
+\usepackage{colortbl}
+\usepackage{soul}
+%\usepackage{placeins}
+\usepackage{dsfont}
+\usepackage{bbm}
+\usepackage{graphicx} 
+%\usepackage[table,xcdraw]{color}
+%\usepackage{float}
+\usepackage[colorlinks=true, allcolors=blue]{hyperref}%
+
+% ============================================
+% Macro for reclaiming a lot of space
+% --------------------------------------------
+% START BLOCK
+%END BLOCK
+% ============================================
+% \newlist{inlineroman}{enumerate*}{1}
+% \setlist[inlineroman]{itemjoin*={{, and }},afterlabel=~,label=\roman*.}
+
+\newcommand{\inlinerom}[1]{
+\begin{inlineroman}
+#1
+\end{inlineroman}
+}
+
+% \newlist{Inlineroman}{enumerate*}{1}
+% \setlist[Inlineroman]{itemjoin*={{, and }},afterlabel=~,label=\Roman*.}
+
+\newcommand{\InlineRom}[1]{
+\begin{Inlineroman}
+#1
+\end{Inlineroman}
+}
+\begin{document}
+
+
+%\pagestyle{plain} %comment before submit
+% \setlist[enumerate]{nosep}
+% \setlist[itemize]{nosep}
+\definecolor{mintgreen}{rgb}{0.6, 1.0, 0.6}
+\definecolor{pastelviolet}{rgb}{0.8, 0.6, 0.79}
+\definecolor{peridot}{rgb}{0.9, 0.89, 0.0}
+\definecolor{richbrilliantlavender}{rgb}{0.95, 0.65, 1.0}
+\definecolor{robineggblue}{rgb}{0.0, 0.8, 0.8}
+
+\definecolor{green}{rgb}{0.1,0.1,0.1}
+\newcommand{\done}{\cellcolor{teal}done} 
+
+
+
+\title{\text EnCoMP: Enhanced Covert Maneuver Planning with Adaptive Threat-Aware Visibility Estimation using Offline Reinforcement Learning}
+
+
+
+\author{Jumman Hossain$^{1}$, Abu-Zaher Faridee$^{1}$, Nirmalya Roy$^{1}$, Jade Freeman$^{2}$, Timothy Gregory$^{2}$, and Theron Trout$^{3}$%
+\thanks{*This work has been supported by U.S. Army Grant \texttt{\#W911NF2120076}}%
+\thanks{$^{1}$Jumman Hossain, Abu-Zaher Faridee, and Nirmalya Roy are with the Department of Information Systems, University of Maryland, Baltimore County, USA. {\tt\small \{jumman.hossain, faridee1, nroy\}@umbc.edu}}%
+\thanks{$^{2}$Jade Freeman and Timothy Gregory are with the DEVCOM Army Research Lab, USA. {\tt\small \{jade.l.freeman2.civ, timothy.c.gregory6.civ\}@army.mil}}%
+\thanks{$^{3}$Theron Trout is with Stormfish Scientific Corp. {\tt\small theron.trout@stormfish.io}}%
+}
+% \author{\IEEEauthorblockN{Jumman Hossain$^1$, Nirmalya Roy$^1$}
+% \IEEEauthorblockA{	
+% $^1$Center for Real-time Distributed Sensing and Autonomy}
+% \IEEEauthorblockA{$^1$Department of Information Systems,
+% University of Maryland, Baltimore County, USA}
+% % \IEEEauthorblockA{$^2$Army Research Lab, USA}
+% \IEEEauthorblockA{$^1$\{jumman.hossain, nroy\}@umbc.edu}}
+
+\maketitle
+\input{sections/Abstract}
+\begin{IEEEkeywords}
+Reinforcement learning, Offline reinforcement learning,
+Covert Map, Threat Map, Height Map, Covert Navigation.
+\end{IEEEkeywords}
+\input{sections/Introduction}
+\input{sections/Related_Work}
+\input{sections/Background}
+\input{sections/Methodology}
+\input{sections/Experiments_and_Results}
+\input{sections/Conclusion}
+%\input{sections/Draft}
+
+\bibliographystyle{unsrt}
+\bibliography{bibliography}
+\end{document}

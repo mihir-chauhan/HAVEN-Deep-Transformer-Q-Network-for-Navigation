@@ -1,0 +1,836 @@
+\documentclass[letterpaper, 10 pt, conference]{ieeeconf}
+\IEEEoverridecommandlockouts                              % This command is only needed if 
+                                                          % you want to use the \thanks command
+
+\overrideIEEEmargins                                      % Needed to meet printer requirements.
+
+% The preceding line is only needed to identify funding in the first footnote. If that is unneeded, please comment it out.
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+% \usepackage{natbib}
+\usepackage{booktabs}
+
+% \def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+%     T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+\makeatletter
+\let\NAT@parse\undefined
+\makeatother
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    filecolor=magenta,      
+    urlcolor=cyan,
+    citecolor=red,
+    pdftitle={goslam},
+    pdfpagemode=FullScreen,
+}
+\begin{document}
+
+\title{HAVEN: Hierarchical Adversary-aware Visibility-Enabled Navigation with Cover Utilization using Deep Transformer Q-Networks\\
+\thanks{}
+}
+
+% \author{Anonymous authors}
+\author{Mihir Chauhan$^{1}$, Damon Conover$^{2}$, Aniket Bera$^{1}$%
+\thanks{\raggedright $^{1}$Mihir Chauhan, and Aniket Bera are with the IDEAS Lab, Department of Computer Science, Purdue University, West Lafayette, IN, USA. %
+        {\tt\small \{\href{mailto:chauhanm@purdue.edu}{chauhanm}\allowbreak,\href{mailto:aniketbera@purdue.edu}{aniketbera}\allowbreak\}@\allowbreak purdue\allowbreak.edu}}
+\thanks{\raggedright $^{2}$Damon Conover is with the DEVCOM Army Research Laboratory, Adelphi, MD, USA. %
+        {\tt\small \{\href{mailto:chauhanm@purdue.edu}{damon.m.conover.civ@army.mil}\}}}%
+}
+
+\maketitle
+
+\begin{abstract}
+Autonomous navigation in partially observable environments requires agents to reason beyond immediate sensor input, exploit occlusion, and ensure safety while progressing toward a goal. These challenges arise in many robotics domains, from urban driving and warehouse automation to defense and surveillance. Classical path planning approaches and memory-less reinforcement learning often fail under limited fields-of-view (FoVs) and occlusions, committing to unsafe or inefficient maneuvers. We propose a hierarchical navigation framework that integrates a Deep Transformer Q-Network (DTQN) as a high-level subgoal selector with a modular low-level controller for waypoint execution. The DTQN consumes short histories of task-aware features, encoding odometry, goal direction, obstacle proximity, and visibility cues, and outputs Q-values to rank candidate subgoals. Visibility-aware candidate generation introduces masking and exposure penalties, rewarding the use of cover and anticipatory safety. A low-level potential field controller then tracks the selected subgoal, ensuring smooth short-horizon obstacle avoidance. We validate our approach in 2D simulation and extend it directly to a 3D Unity–ROS environment by projecting point-cloud perception into the same feature schema, enabling transfer without architectural changes. Results show consistent improvements over classical planners and RL baselines in success rate, safety margins, and time-to-goal, with ablations confirming the value of temporal memory and visibility-aware candidate design. These findings highlight a generalizable framework for safe navigation under uncertainty, with broad relevance across robotic platforms.
+\end{abstract}
+
+% \begin{abstract}
+% The problem of autonomous navigation under partial observability of environments is challenging when including adversarial threats, the need for occlusion from such threats, and a limited field-of-view (FoV). Classical path planning approaches and memory-less reinforcement learning approaches struggle in such conditions due to the loss of state information due to a lack of temporal reasoning. We present a hierarhical framework for enemy-aware navigation that integrates a novel approach for such problems using a Deep Transformer Q-Network (DTQN) as a high-level subgoal selector along with a modular low-level controller for waypoint tracking. The DTQN consumes short sequences of task-aware features, encoding various odometry input, goal direction, obstacle proximity, and enemy visibilities, and ouputs Q-values to rank candidate subgoals under the FoV and occlusion constraints. Candidate generation incorporates visibility-aware masking and exposure penalties, thus rewarding cover utilization and anticipatory safety from adversarial threats. A low-level controller then executes trajectories towards the selected subgoal while handling shorter-horizon obstacle avoidance and evading enemy FoVs. We validate this approach in a 2D simulation and extend it to a 3D Unity-ROS environment by projecting point-cloud perceptions into the same feature schema, allowing the 2D-trained DTQN to generalize without architectural changes when deploying in 3D. The results demonstrate consistent improvements over classical planners and RL baselines in success rate, safety margins, and also time-to-goal, with ablations confirming the importance of memory and visiblity-aware candidate design.\end{abstract}
+
+
+% \section{Introduction}
+% Autonomous navigation in real-world environments requires agents to reason while under uncertainty, avoid obstacles smoothly, and make progress towards the higher-level goal despite limited perception. These challenges are even greater in adversarial settings, where exposure to enemies’ field of views must be minimized. In such scenarios, agents typically operate with partial observability, perceiving the environment only through constrained fields-of-view (FoVs), such as through LiDAR or vision-based sensors, and being able to determine obstacles. Effective navigation therefore demands not only spatial reasoning but also the ability to exploit cover, anticipate threat visibility, and retain relevant past observations.
+
+% Classical local planners such as the Dynamic Window Approach (DWA) or Vector Field Histogram (VFH) have been widely adopted in robotics for short-horizon obstacle avoidance and while effective in open environments, these methods rely on instantaneous sensing and are less effective under limited FoVs and occlusions, often committing to unsafe or inefficient maneuvers, as seen in evaluation, Section VII. Similarly, memory-less reinforcement learning (RL) methods have shown promise in navigation tasks but struggle when critical environmental information lies outside the current observation space, a feature of partially observable environments. Without temporal abstraction or memory, such policies fail to leverage cover, anticipate visibility, or reason about hidden threats. Hence, a synthesis of such approaches might show some efficacy in such environments.
+
+% Recent work in reinforcement learning under partial observability has explored recurrent networks and, more recently, Transformer-based architectures for their ability to capture dependencies across larger time horizons. However, their application to robotic navigation remains limited, especially in the context of adversarial, visibility-constrained planning. At the same time, hierarchical methods have proven effective for decomposing complex navigation, like such problems, into a higher-level decision making model combined with a lower-level controller, yet most existing approaches focus primarily on geometric safety and efficiency, without explicitly modeling enemy visibility or cover utilization.
+
+% In this work, we address these limitations through a hierarchical, memory-augmented navigation framework that integrates a Deep Transformer Q-Network (DTQN) as the higher-level subgoal selector with a lower-level controller for waypoint execution. Our method introduces three key innovations:
+
+% \begin{enumerate}
+%     \item Visibility-aware subgoal selection: We design compact, task-aware feature vectors that encode geometry, goal progress, obstacle distances, and enemy visibility, enabling the high-level DTQN to learn cover-aware strategies.
+%     \item Hierarchical integration with low-level control: This novel approach includes the DTQN that selects subgoals from a candidate set, while a potential field controller tracks trajectories and handles short-horizon collision avoidance.
+%     \item Unified 2D–3D extension: We test this by extending the 2D framework to 3D Unity-ROS environments by projecting point-cloud perception into a similar feature schema, allowing direct reuse of the trained DTQN without architectural changes.
+% \end{enumerate}
+
+% We evaluate our approach in both 2D and 3D environments and such experiments demonstrate consistent improvements over classical planners and other path-planning baselines in terms of success rate, minimum obstacle distance, decreased enemy exposure, and time-to-goal. Ablation studies confirm the importance of memory, candidate generation, and visibility-aware design.
+
+% This paper is organized as follows. Section II reviews related work on memory-based RL, local planning under partial observability, and hierarchical navigation. Section III formulates the problem as a POMDP with enemy visibility constraints. Section IV presents the proposed hierarchical DTQN framework, including candidate generation, feature encoding, and low-level control. Section V describes the experimental setup in 2D and 3D. Section VI reports results and ablation studies, followed by analysis in Section VII and discussion in Section VIII. Section IX outlines future research directions, and Section X concludes the paper.
+
+\section{Introduction}
+Autonomous navigation in real-world environments requires agents to reason under uncertainty, avoid obstacles smoothly, and make steady progress toward a goal despite limited perception. These challenges appear across domains such as urban driving with occluded pedestrians, warehouse robots operating in cluttered aisles, and field robots moving through vegetation. In defense and surveillance applications, the problem is further complicated by \emph{adversarial agents} whose fields-of-view (FoVs) must be actively avoided. In such settings, exposure may lead to detection or failure, making navigation both a geometric and a tactical problem. Effective navigation therefore demands not only spatial reasoning but also the ability to exploit occlusion, anticipate visibility, and retain relevant past observations.
+
+
+\begin{figure}[htbp]
+    \centerline{\includegraphics[width=3.5in]{figures/chauh1.png}}
+    \caption{Proposed hierarchical architecture for enemy-aware path planning with cover utilization using high-level Deep Transformer Q-Network and low-level potential field controller. }
+    \label{fig:cover}
+\end{figure}
+
+Classical local planners such as the Dynamic Window Approach (DWA) and Vector Field Histogram (VFH) remain widely used for short-horizon obstacle avoidance. While effective in open environments, these approaches rely on instantaneous sensing and degrade significantly under limited FoVs and occlusions, often committing to unsafe or inefficient maneuvers (see Sec.~VII). Reinforcement learning (RL) methods have shown promise for navigation, but memory-less variants struggle in partially observable domains: when crucial state information lies outside the current sensor view, such policies fail to leverage cover, anticipate visibility, or reason about hidden threats. These limitations motivate frameworks that combine geometric safety priors with memory-enabled decision making.
+
+Recent work in RL under partial observability has introduced recurrent and Transformer-based architectures, which capture temporal dependencies over long horizons. However, their application to robotic navigation remains limited, particularly for visibility-constrained and adversarial scenarios. In parallel, hierarchical control has proven effective in decomposing complex navigation tasks into high-level decision making and low-level control. Yet most existing approaches focus on geometric safety and efficiency alone, without explicitly modeling enemy visibility or adversarial occlusion-aware reasoning.
+
+In this work, we address these gaps with a hierarchical, memory-augmented navigation framework that integrates a Deep Transformer Q-Network (DTQN) as a high-level subgoal selector with a low-level controller for waypoint execution. Our contributions are threefold:
+\begin{enumerate}
+    \item \textbf{Visibility- and adversarial-aware subgoal selection:} We design compact, task-aware feature vectors that encode geometry, goal progress, obstacle distances, and adversarial visibility cues, enabling the high-level DTQN to learn occlusion- and cover-aware strategies.
+    \item \textbf{Hierarchical integration with low-level control:} The DTQN selects subgoals from a candidate set, while a potential field controller executes short-horizon trajectories, ensuring smooth obstacle avoidance, reactivity, and evasive maneuvers against adversarial agents.
+    \item \textbf{Unified 2D--3D extension:} We demonstrate transfer by extending the 2D framework to 3D Unity--ROS environments, projecting point-cloud perception into the same feature schema, enabling direct reuse of the trained DTQN without architectural changes.
+\end{enumerate}
+
+We evaluate our framework in both 2D and 3D environments, showing consistent improvements over classical planners and RL baselines in terms of success rate, obstacle clearance, reduced exposure to adversarial FoVs, and time-to-goal. Ablation studies confirm the importance of temporal memory, candidate generation, and visibility-aware design.
+
+The remainder of this paper is organized as follows. Section~II reviews related work on memory-based RL, local planning under partial observability, and hierarchical navigation. Section~III formulates the problem as a Partially Observable Markov Decision Process (POMDP) with adversarial visibility constraints. Section~IV presents the hierarchical DTQN framework. Section~V describes the experimental setup, and Section~VI reports results and ablations. Sections~VII and VIII provide analysis and discussion. Section~IX outlines future research directions, and Section~X concludes the paper.
+
+
+\section{Related Work}
+
+\subsection{Approaches for Collision Avoidance}
+
+Collision avoidance has been a long-standing problem in robotics and autonomous navigation, with a variety of approaches proposed in both classical and reinforcement-learning methods. Classical methods often rely on geometric reasoning and reactive control laws, such as velocity obstacles introduced by Fiorini and Shiller \cite{doi:10.1177/027836499801700706} which computes admissible accelerations that prevent collisions with moving obstacles. More recent approaches utilize reinforcement learning, such as CoverNav, in which Hossain et al. \cite{hossain2023covernav} navigates outdoor environments by following cover, determined by visual perception models and LIDAR point clouds. Wang et al. \cite{9461231} deploy a multi-level autonomous vehicle control schema, using reinforcement learning for submodules that are merged into a final steering and brake control policy. Similarly, Lin et al. \cite{lin2023occlusion} solve path planning with partial observability, while Guvenkaya et al. \cite{guvenkaya2024local} use predetermined waypoints to plan paths with collision aware sensing with an extrapolation model.
+
+\subsection{Adversarial Threat-Aware Navigation}
+
+Adversarial Threat-Aware Navigation is relatively less explored compared to collision avoidance in path planning, but approaches, such as Hossain et al. \cite{hossain2024encomp} utilize offline reinforcement learning to enable robots to navigate in cover while being penalized for being exposed to potential targets, using a Conversative Q-Learning model, needing a relatively large dataset for training. Auode et al. \cite{5650734} approach similar problems except with the goal of stray object avoidance where threats are assessed based on their real-time motion into an autonomous vehicle’s path, where intentions of such moving objects are predicted and then assessed as threats as needed.
+
+\subsection{Hierarchical Reinforcement Learning Control Strategies}
+
+Hierarchical reinforcement learning (HRL) has been widely explored as a means to decompose complex decision-making into structured levels of abstraction, specifically applications of autonomous path planning in dynamic traffic scenarios. Zhang et al. \cite{zhang2025trajectory} utilize a upper level deep reinforcement model with a lower level controller using model predictive control (MPC). The upper level model plans high level policies which are implemented with an MPC controller for tasks of driving unmanned vehicles in traffic. Similar approaches, such as Naveed et al. \cite{9564634} utilize a 3 layer approach with high-level policy options and a Long-Short-Term-Memory layer to help with observation noise. Other approaches such as Zheng et al. \cite{7378017} propose using HRL for multi-agent planning to reduce the state space and divide learning into higher and lower level tasks, while Lu et al. \cite{9241055} incorporate a kernel-based least-squares policy iteration with uneven sampling and pooling to efficiently solve decision-making problems on a high level.
+
+\subsection{Deep Transformer Q-Network}
+
+In this paper, we discuss the usage of Deep Transformer Q-Networks (DTQN) for the purpose of path planning with collision and adversarial threat avoidance, which to our knowledge is a novel application of this architecture to a less explored problem. Esslinger et al. \cite{esslinger2022deep} have shown that DTQNs are effective in tasks involving partial observability, where memory of prior observations helps improve performance over recurrent neural networks (RNNs). Hence, we chose to use this model architecture as a high-level subgoal selector model. For the development of our model, we modified the source code provided by Esslinger et al. https://github.com/kevslinger/DTQN.
+
+% \section{Problem}
+
+% We formulate the problem presented, enemy-aware navigation with cover utilization, as a Partially Observable Markov Decision Process (POMDP), similar to that of \cite{esslinger2022deep} and \cite{KAELBLING199899}, since the agent is not given the full state of the environment at an instantaneous time step. In this, an autonomous agent must reach the goal while avoiding collisions and minimizing exposure to enemy fields-of-view (FoVs). 
+% The POMDP is defined by as the tuple: $\mathcal{M} = (\mathcal{S}, \mathcal{A}, \mathcal{O}, T, Z, R, \gamma),$
+% where $\mathcal{S}$ is the state space, $\mathcal{A}$ the action space, $\mathcal{O}$ the observation space, 
+% $T$ the state transition function, $Z$ the observation model, $R$ the reward function, and $\gamma \in [0,1)$ the discount factor.
+
+% \subsection{State Space}
+% The environment state at time $t$ is $s_t \in \mathcal{S}$, which includes:
+% \begin{itemize}
+%     \item Agent pose and velocity $(x_t, y_t, v_{x,t}, v_{y,t})$
+%     \item Static obstacle and occluder geometry in 2D (polygonal map)
+%     \item Enemy positions, headings, and FoV parameters
+%     \item Goal position $g^\star$
+% \end{itemize}
+
+% \subsection{Observation Model}
+% The agent cannot observe the full environment state $s_t \in \mathcal{S}$ directly.  
+% Instead, at each timestep it receives a partial observation $o_t \in \mathcal{O}$ given by
+% \begin{equation}
+%     o_t \sim Z(o_t \mid s_t, a_{t-1}),
+% \end{equation}
+% where $a_{t-1} \in \mathcal{A}$ is the action taken in the previous timestep, and $Z$ is the observation function that encodes the field-of-view (FoV) constraint and line-of-sight occlusions. In other words, $Z$ maps the true environment state into the subset of features that are locally perceivable by the agent.  
+
+% Specifically, the observation $o_t$ is represented by a structured feature vector including:
+% \begin{itemize}
+%     \item \textbf{Relative obstacle and subgoal positions:} coordinates of visible obstacles and candidate subgoals expressed in the agent’s local frame.  
+%     \item \textbf{Enemy visibility features:} binary or scalar indicators capturing whether any enemy has line-of-sight to the agent, as well as the minimum distance to visible enemy FoVs.  
+%     \item \textbf{Relative goal information:} vector displacement to the goal if the goal lies within the current FoV; otherwise, this feature is masked.  
+% \end{itemize}
+
+% The high-level policy uses an observation history $h_t = (o_{t-k+1}, \ldots, o_t)$
+% to incorporate memory over the past $k$ steps.
+
+
+% \subsection{Reward Function}
+
+% The reward function is structured so that policies that cause the agent to be within the a radius-based vicinity of a threat, regress to previous subgoals and thus being unproductive are penalized while rewarding productive subgoal selection and a lesser time to final goal. The final structure of the reward function can be found in Section V. 
+
+% \subsection{Candidate Subgoal Features}
+% Each candidate subgoal $g_t^i \in \mathcal{G}_t$ is represented by a feature vector $f_t^i \in \mathbb{R}^{16}$:
+% \begin{align*}
+%   f_t^i = \big[ & x_t, y_t, v_{x,t}, v_{y,t}, (g^\star_x - x_t), (g^\star_y - y_t), d_{\text{goal}}, \\
+%   & g^i_x, g^i_y, (g^i_x - x_t), (g^i_y - y_t), d_{\text{cand}}, n_{\text{enemy}}, d_{\min}^{\text{enemy}}, \\
+%   & n_{\text{vis}}, \mathbb{1}_{\text{seen}} \big].
+% \end{align*}
+% Here $(x_t, y_t)$ and $(v_{x,t}, v_{y,t})$ are the agent position and velocity, $(g^\star_x - x_t, g^\star_y - y_t)$ the goal delta with $d_{\text{goal}}$ its norm, $(g^i_x, g^i_y)$ the candidate centroid, $(g^i_x - x_t, g^i_y - y_t)$ the agent-to-candidate vector with $d_{\text{cand}}$ its norm, $n_{\text{enemy}}$ the number of enemies, $d_{\min}^{\text{enemy}}$ the minimum distance from any enemy to the candidate, $n_{\text{vis}}$ the number of enemies with line-of-sight to the candidate, and $\mathbb{1}_{\text{seen}}$ indicates whether any enemy currently sees the agent.
+
+% \subsection{Evaluation Metrics}
+% Performance is assessed with:
+% \begin{itemize}
+%     \item \textbf{Success Rate:} ratio of runs reaching $g^\star$ to incomplete
+%     \item \textbf{Time-to-Goal:} steps to reach $g^\star$
+%     \item \textbf{Path Length:} total trajectory distance
+%     \item \textbf{Safety Margin:} minimum obstacle clearance
+%     \item \textbf{Visibility Exposure:} time exposed to enemy FoVs
+%     \item \textbf{Collision Rate:} fraction of failed runs due to collisions
+% \end{itemize}
+% These jointly evaluate efficiency, robustness, and stealth under adversarial conditions.
+
+\section{Problem}
+We formulate the task of adversarially aware navigation with cover utilization as a Partially Observable Markov Decision Process (POMDP), following \cite{esslinger2022deep,KAELBLING199899}. In this setting, the agent is not given the full state of the environment at each timestep but must reason under limited observability. The goal is to reach a target location while avoiding collisions and minimizing exposure to adversarial agents’ fields-of-view (FoVs). This formulation captures both the geometric challenges of obstacle avoidance and the tactical requirement of occlusion-aware motion.
+
+Formally, the POMDP is defined as the tuple
+\[
+\mathcal{M} = (\mathcal{S}, \mathcal{A}, \mathcal{O}, T, Z, R, \gamma),
+\]
+where $\mathcal{S}$ is the state space, $\mathcal{A}$ the action space, $\mathcal{O}$ the observation space, $T$ the state transition function, $Z$ the observation model, $R$ the reward function, and $\gamma \in [0,1)$ the discount factor.
+
+\subsection{State Space}
+At time $t$, the environment state $s_t \in \mathcal{S}$ includes:
+\begin{itemize}
+    \item Agent pose and velocity: $(x_t, y_t, v_{x,t}, v_{y,t})$
+    \item Static obstacle and occluder geometry in 2D (polygonal map)
+    \item Enemy positions, headings, and FoV parameters
+    \item Goal position $g^\star$
+\end{itemize}
+
+\subsection{Observation Model}
+The agent cannot observe $s_t$ directly. Instead, at each timestep it receives a partial observation $o_t \in \mathcal{O}$ given by
+\begin{equation}
+    o_t \sim Z(o_t \mid s_t, a_{t-1}),
+\end{equation}
+where $a_{t-1} \in \mathcal{A}$ is the previous action, and $Z$ encodes the FoV constraint and line-of-sight occlusions. Thus, $Z$ maps the true environment into the subset of features perceivable by the agent’s sensors.
+
+Each $o_t$ is represented as a structured feature vector including:
+\begin{itemize}
+    \item \textbf{Relative obstacle and subgoal positions:} coordinates of visible obstacles and candidate subgoals in the agent’s local frame.  
+    \item \textbf{Enemy visibility features:} indicators for whether an enemy has line-of-sight to the agent, and the minimum distance to visible enemy FoVs.  
+    \item \textbf{Relative goal information:} vector displacement to the goal if within the FoV; otherwise, this term is masked.  
+\end{itemize}
+
+The high-level policy consumes an observation history 
+$h_t = (o_{t-k+1}, \ldots, o_t)$ 
+to incorporate memory across the past $k$ steps, enabling temporal reasoning about occlusion and threat exposure.
+
+\subsection{Reward Function}
+The reward function penalizes unproductive or unsafe behavior—such as lingering near enemy FoVs, revisiting prior subgoals, or colliding with obstacles—while rewarding productive subgoal progress and shorter time-to-goal. The exact structure of the reward is described in Section~V.
+
+\subsection{Candidate Subgoal Features}
+Each candidate subgoal $g_t^i \in \mathcal{G}_t$ is represented by a feature vector $f_t^i \in \mathbb{R}^{16}$:
+\begin{align*}
+  f_t^i = \big[ & x_t, y_t, v_{x,t}, v_{y,t}, (g^\star_x - x_t), (g^\star_y - y_t), d_{\text{goal}}, \\
+  & g^i_x, g^i_y, (g^i_x - x_t), (g^i_y - y_t), d_{\text{cand}}, n_{\text{enemy}}, d_{\min}^{\text{enemy}}, \\
+  & n_{\text{vis}}, \mathbb{1}_{\text{seen}} \big].
+\end{align*}
+Here $(x_t, y_t)$ and $(v_{x,t}, v_{y,t})$ denote the agent state; $(g^\star_x - x_t, g^\star_y - y_t)$ the goal displacement with $d_{\text{goal}}$ its norm; $(g^i_x, g^i_y)$ the candidate centroid; $(g^i_x - x_t, g^i_y - y_t)$ the agent-to-candidate vector with $d_{\text{cand}}$ its norm; $n_{\text{enemy}}$ the number of adversaries; $d_{\min}^{\text{enemy}}$ the minimum candidate-to-enemy distance; $n_{\text{vis}}$ the number of enemies with line-of-sight to the candidate; and $\mathbb{1}_{\text{seen}}$ indicates whether the agent is currently exposed.
+
+\subsection{Evaluation Metrics}
+We assess performance with:
+\begin{itemize}
+    \item \textbf{Success Rate:} fraction of runs reaching $g^\star$  
+    \item \textbf{Time-to-Goal:} steps to reach $g^\star$  
+    \item \textbf{Path Length:} total trajectory distance  
+    \item \textbf{Safety Margin:} minimum clearance to obstacles  
+    \item \textbf{Visibility Exposure:} cumulative time exposed to enemy FoVs  
+    \item \textbf{Collision Rate:} fraction of runs terminated by collision  
+\end{itemize}
+Together, these metrics evaluate efficiency, robustness, and stealth—critical for navigation in adversarial and visibility-constrained environments.
+
+
+% \section{Methodology}
+
+% We propose a hierarchical decision-making framework that enables an agent to navigate toward a goal while minimizing exposure to enemy fields-of-view (FoVs) and avoiding static obstacles. Our approach integrates a high-level policy for subgoal selection with a low-level controller for reactive execution. The simplified architecture is shown in Fig.~\ref{fig:framework}.
+
+% \begin{figure}[htbp]
+%     \centerline{\includegraphics[width=3.5in]{figures/chauh2.png}}
+%     \caption{High-level architecture diagram depicting the proposed hierarchical approach for training and evaluation in a 2D environment with a high-level DTQN outputting Q-values for candidate subgoals and the selected subgoal (argmax) being passed into the low-level potential field controller.}
+%     \label{fig:framework}
+% \end{figure}
+
+% \subsection{Hierarchical Policy Structure}
+% At each timestep $t$, the agent executes two levels of control:
+% \begin{enumerate}
+%     \item \textbf{High-Level Policy $\pi_H$}: selects a subgoal $g_t$ from a candidate set $\mathcal{G}_t$ based on the history of partial observations $h_t$.
+%     \item \textbf{Low-Level Controller $\pi_L$}: generates continuous control actions $a_t \in \mathcal{A}_L$ that drive the agent toward $g_t$ while performing local obstacle avoidance.
+% \end{enumerate}
+% This hierarchical decomposition allows long-horizon planning at the subgoal level while ensuring safety and reactivity at the control level.
+
+% \subsection{Observation Model}
+% At each high-level decision, we do not use raw sensor observations directly. Instead, we construct, for every candidate subgoal $g_t^i \in \mathcal{G}_t$, a compact feature vector $f_t^i \in \mathbb{R}^{16}$ derived from the current perceived scene:
+% \begin{itemize}
+%     \item \textbf{Agent state:} $(x_t, y_t, v_{x,t}, v_{y,t})$,
+%     \item \textbf{Goal-relative terms:} $(g^\star_x - x_t,\, g^\star_y - y_t)$ and $d_{\text{goal}}$,
+%     \item \textbf{Candidate geometry:} $(g^i_x, g^i_y)$, $(g^i_x - x_t,\, g^i_y - y_t)$ and $d_{\text{cand}}$,
+%     \item \textbf{Enemy visibility stats:} number of enemies $n_{\text{enemy}}$, minimum enemy-to-candidate distance $d_{\min}^{\text{enemy}}$, number of enemies with line-of-sight to the candidate $n_{\text{vis}}$, and an indicator $\mathbb{1}_{\text{seen}}$ of whether any enemy currently sees the agent.
+% \end{itemize}
+% Obstacle/occluder geometry comes from the 2D polygonal map (or from point-cloud processing in 3D), and enemy line-of-sight is computed against these polygons; we do not mask goal or candidate terms by the agent’s FoV. The DTQN input for candidate $i$ is a length-$k$ sequence $X_t^i \in \mathbb{R}^{k \times 16}$ formed by tiling $f_t^i$ across $k$ steps (the model is memory-capable; in the current implementation the per-step features are identical within a decision).
+
+% \subsection{Candidate Subgoal Generation}
+% At each timestep, a set of candidate subgoals $\mathcal{G}_t = \{g_t^1, \ldots, g_t^m\}$ is generated within a local horizon. Subgoals are sampled from free space regions that satisfy:
+% \begin{equation}
+% g_t^i \in \mathcal{F}_t = \{p \in \mathbb{R}^2 \mid p \notin \mathcal{O},~p \notin \text{FoV}(E)\},
+% \end{equation}
+% where $\mathcal{O}$ denotes static obstacles and $\text{FoV}(E)$ the union of enemy FoV sectors. This ensures candidate subgoals lie in safe, occluded regions when possible.
+
+% \subsection{Feature Encoding for Subgoal Evaluation}
+% Each candidate subgoal $g_t^i$ is encoded into a feature vector $f(g_t^i) \in \mathbb{R}^{d}$ containing geometric and tactical information:
+% \begin{equation}
+% f(g_t^i) = [d_{\text{goal}}, d_{\text{obs}}, d_{\text{FoV}}, \theta_{\text{align}}, \ldots],
+% \end{equation}
+% where $d_{\text{goal}}$ is the distance to the global goal, $d_{\text{obs}}$ the clearance from obstacles, $d_{\text{FoV}}$ the minimum distance to enemy visibility, and $\theta_{\text{align}}$ the heading alignment. These features are normalized and concatenated into a fixed-dimensional representation (e.g., 16D).
+
+% \subsection{High-Level Subgoal Selection}
+% For each candidate subgoal $g_t^i \in \mathcal{G}_t$, we construct a length-$k$ feature sequence
+% $X_t^i \in \mathbb{R}^{k \times 16}$ by tiling the 16-D vector $f_t^i$. The Deep Transformer
+% Q-Network (DTQN) produces a sequence of Q-values $Y_t^i = \mathrm{DTQN}_\theta(X_t^i) \in \mathbb{R}^{k \times 1}$,
+% and we use the last step as the scalar score:
+% \begin{equation}
+% Q_\theta(g_t^i \mid h_t) \;:=\; \big[\mathrm{DTQN}_\theta(X_t^i)\big]_{k,1}.
+% \end{equation}
+% Given the valid candidate set $\mathcal{M}_t \subseteq \{1,\dots,m\}$ after masking, the subgoal is
+% selected via $\varepsilon$-greedy during training over scalar Q-values:
+% \begin{equation}
+% g_t \;=\;
+% \begin{cases}
+% \text{Uniform}(\mathcal{M}_t), & \text{with probability } \varepsilon,\\[4pt]
+% \displaystyle \arg\max_{i \in \mathcal{M}_t} \; Q_\theta(g_t^i \mid h_t), & \text{with probability } 1-\varepsilon.
+% \end{cases}
+% \end{equation}
+% At test time, $\varepsilon \!\to\! 0$ and the selection is greedy by $\arg\max$.
+
+% \subsection{Reward Function}
+% The per-step reward function used by the high-level DTQN considers low-level execution feedback:
+% \begin{equation}
+% r_t = w_p \big(d_{t-1}^{\text{sub}} - d_{t}^{\text{sub}}\big)
+%       - w_e \,\mathbb{1}_{\text{exposed}_t}
+%       - w_c \,\mathbb{1}_{\text{collision}_t}
+%       - w_t,
+% \end{equation}
+% where $d_{t}^{\text{sub}}$ is the (euclidean) distance from the agent to the currently selected subgoal at time $t$. Event bonuses are applied when reached:
+% \begin{equation}
+% r_t \leftarrow r_t + 
+% \begin{cases}
+% b_{\text{subgoal}}, & \text{if subgoal reached at } t,\\
+% b_{\text{goal}}, & \text{if final goal reached at } t,\\
+% 0, & \text{otherwise.}
+% \end{cases}
+% \end{equation}
+% and $w_p, w_e, w_c, w_t$ correspond to the implementation weights (respectively: progress to subgoal, exposure penalty, collision penalty, time penalty), and $b_{\text{subgoal}}$, $b_{\text{goal}}$ are the respective bonuses.
+
+% \subsection{Low-Level Execution}
+% The low-level control execution is carried out with a potential field controller. Given the selected subgoal $g_t \in \mathbb{R}^2$, let $p_\tau \in \mathbb{R}^2$ and $v_\tau \in \mathbb{R}^2$ denote the agent position and velocity at
+% low-level step $\tau$, with time step $\Delta t>0$. The controller composes forces:
+% \begin{equation}
+% \begin{aligned}
+% F_{\text{des}}(\tau) &= k_d\, \frac{g_t - p_\tau}{\|g_t - p_\tau\| + \epsilon}, \\
+% \end{aligned}
+% \end{equation}
+
+% \begin{equation}
+% \begin{aligned}
+% F_{\text{obs}}(\tau) &= \sum_{j} k_o\,\psi_{\rho}\big(p_\tau, \mathcal{O}_j\big),
+% \end{aligned}
+% \end{equation}
+
+% \begin{equation}
+% \begin{aligned}
+% F_{\text{enemy}}(\tau) &= \sum_{e \in \mathcal{E}} k_e\,\frac{p_\tau - p^e_\tau}{(\|p_\tau - p^e_\tau\|+\epsilon)^2}\,\mathbb{1}_{\text{seen}(e,\tau)},
+% \end{aligned}
+% \end{equation}
+
+
+% \begin{equation}
+% \begin{aligned}
+% \widehat{p}^e_{\tau} &= p_{\mathrm{det}}\!\big(p_\tau, \widehat{p}^e_{\tau+T}\big), 
+% \quad d^e_{\tau} = \big\|p_\tau - \widehat{p}^e_{\tau+T}\big\|, \\
+% \hat{u}^e_{\tau} &= \frac{p_\tau - \widehat{p}^e_{\tau+T}}{d^e_{\tau} + \epsilon}, \\
+% F_{\mathrm{ant}}(\tau) &= \sum_{e\in\mathcal{E}} k_a \;\frac{\big(\widehat{p}^e_{\tau}\big)^{\eta}}{d^e_{\tau} + \epsilon}\;\hat{u}^e_{\tau}, \\
+% \end{aligned}
+% \end{equation}
+
+% \begin{equation}
+% \begin{aligned}
+% F_{\text{esc}}(\tau) &= k_s\,u_{\text{esc}}(\tau),
+% \end{aligned}
+% \end{equation}
+
+% \begin{equation}
+% \begin{aligned}
+% F_{\text{tot}}(\tau) &= w_d F_{\text{des}} + w_o F_{\text{obs}} + w_e F_{\text{enemy}} \\
+%                      &\quad {}+ w_a F_{\text{ant}} + w_s F_{\text{esc}}.
+% \end{aligned}
+% \end{equation}
+
+% \noindent With exponential smoothing $\beta \in [0,1)$ and speed limit $v_{\max}$:
+% \begin{equation}
+% \begin{aligned}
+% u_\tau      &= \beta\,v_\tau + (1-\beta)\,F_{\text{tot}}(\tau), \\
+% v_{\tau+1}  &= \mathrm{sat}_{v_{\max}}(u_\tau), \\
+% p_{\tau+1}  &= p_\tau + v_{\tau+1}\,\Delta t.
+% \end{aligned}
+% \end{equation}
+
+% The low-level action $a_\tau$ is the executed velocity command (in 3D, it is mapped from $v_{\tau+1}$ to linear/angular),
+% and the option terminates on subgoal (or goal) arrival or after a fixed horizon $H$.
+% Here $k_{\{\cdot\}}$ and $w_{\{\cdot\}}$ are implementation gains/weights; $\mathcal{O}_j$ are obstacle polygons;
+% $\mathcal{E}$ is the enemy set; $\epsilon>0$ is a small constant; $\psi_\rho$ is a repulsive obstacle term;
+% $\mathbb{1}_{\text{seen}(e,\tau)}$ indicates if enemy $e$ has line-of-sight.
+
+% \subsection{Training Procedure}
+% We train the high-level policy $\pi_H$ using reinforcement learning with the reward function defined in Eq.~(6). The low-level controller $\pi_L$ is implemented as a potential field controller with different force terms for obstacle avoidance, smooth motion, enemy avoidance, and goal tracking that have been tuned through testing. This hybrid design allows for learning for tactical decision-making without dealing with a large state space, while maintaining reliable low-level safety.
+
+\section{Methodology}
+We propose a hierarchical decision-making framework that enables an agent to reach a goal while avoiding static obstacles and minimizing exposure to adversarial fields-of-view (FoVs). The approach integrates a high-level policy for subgoal selection with a low-level controller for reactive execution. An overview is shown in Fig.~\ref{fig:framework}.
+
+\begin{figure}[htbp]
+    \centerline{\includegraphics[width=3.5in]{figures/chauh2.png}}
+    \caption{Proposed hierarchical architecture. The high-level DTQN outputs Q-values for candidate subgoals, and the selected subgoal is passed to the low-level potential field controller for execution.}
+    \label{fig:framework}
+\end{figure}
+
+\subsection{Hierarchical Policy Structure}
+At each timestep $t$, the agent executes two levels of control:
+\begin{enumerate}
+    \item \textbf{High-Level Policy $\pi_H$:} selects a subgoal $g_t$ from a candidate set $\mathcal{G}_t$ using the history of partial observations $h_t$.
+    \item \textbf{Low-Level Controller $\pi_L$:} generates continuous control actions $a_t \in \mathcal{A}_L$ that drive the agent toward $g_t$ while performing local obstacle avoidance and evasive maneuvers.
+\end{enumerate}
+This decomposition enables long-horizon planning at the subgoal level while ensuring short-horizon safety and reactivity.
+
+\textcolor{red}{\textbf{Advantages over end-to-end methods.} Our hierarchical design offers three key benefits. First, it reduces the effective action space: the high-level policy selects from $|\mathcal{G}_t| \leq 9$ discrete goals instead of outputting continuous 2D velocities at every timestep, improving sample efficiency. Second, safety-critical behaviors—obstacle avoidance, boundary enforcement, and enemy evasion—are handled by a deterministic low-level controller with repulsive potential fields, avoiding the need to learn reactive collision avoidance from sparse rewards. Third, the modular separation enables direct transfer to 3D (Sec.~VI-B): 2D force vectors are mapped to $(v, \omega)$ ROS commands, and the high-level DTQN weights are reused without retraining in most cases.}
+
+\subsection{Observation Model}
+Instead of raw sensor inputs, each candidate subgoal $g_t^i \in \mathcal{G}_t$ is represented by a compact feature vector $f_t^i \in \mathbb{R}^{16}$:
+\begin{itemize}
+    \item \textbf{Agent state:} $(x_t, y_t, v_{x,t}, v_{y,t})$
+    \item \textbf{Goal-relative terms:} $(g^\star_x - x_t,\, g^\star_y - y_t)$ and $d_{\text{goal}}$
+    \item \textbf{Candidate geometry:} $(g^i_x, g^i_y)$, $(g^i_x - x_t,\, g^i_y - y_t)$ and $d_{\text{cand}}$
+    \item \textbf{Enemy visibility states:} number of enemies $n_{\text{enemy}}$, minimum enemy-to-candidate distance $d_{\min}^{\text{enemy}}$, number of enemies with line-of-sight $n_{\text{vis}}$, and an indicator $\mathbb{1}_{\text{seen}}$ if the agent is currently exposed
+\end{itemize}
+Obstacle and occluder geometry are obtained from the 2D polygonal map (or from point-clouds in 3D). Enemy line-of-sight is computed against these polygons. The DTQN input for candidate $i$ is a length-$k$ sequence $X_t^i \in \mathbb{R}^{k \times 16}$ formed by tiling $f_t^i$, enabling temporal reasoning.
+
+\subsection{Candidate Subgoal Generation}
+At each timestep, candidate subgoals are sampled within a local horizon from regions of free space:
+\begin{equation}
+g_t^i \in \mathcal{F}_t = \{p \in \mathbb{R}^2 \mid p \notin \mathcal{O},~p \notin \text{FoV}(E)\},
+\end{equation}
+where $\mathcal{O}$ are static obstacles and $\text{FoV}(E)$ is the union of enemy FoV sectors. This biases candidates toward occluded and safer regions.
+
+\subsection{Feature Encoding for Subgoal Evaluation}
+Each candidate $g_t^i$ is encoded into a tactical feature vector:
+\begin{equation}
+f(g_t^i) = [d_{\text{goal}}, d_{\text{obs}}, d_{\text{FoV}}, \theta_{\text{align}}, \ldots],
+\end{equation}
+where $d_{\text{goal}}$ is the distance to the goal, $d_{\text{obs}}$ the obstacle clearance, $d_{\text{FoV}}$ the distance to enemy visibility, and $\theta_{\text{align}}$ the heading alignment. All features are normalized and concatenated into a fixed-length representation.
+
+\subsection{High-Level Subgoal Selection}
+For each candidate $g_t^i$, the DTQN processes the sequence $X_t^i$ to produce Q-values:
+\begin{equation}
+Q_\theta(g_t^i \mid h_t) := \big[\mathrm{DTQN}_\theta(X_t^i)\big]_{k,1}.
+\end{equation}
+The chosen subgoal is selected $\varepsilon$-greedily during training:
+\begin{equation}
+g_t =
+\begin{cases}
+\text{Uniform}(\mathcal{M}_t), & \varepsilon,\\[4pt]
+\arg\max_{i \in \mathcal{M}_t} Q_\theta(g_t^i \mid h_t), & 1-\varepsilon,
+\end{cases}
+\end{equation}
+where $\mathcal{M}_t$ is the valid candidate set after masking. At test time, $\varepsilon \!\to\! 0$ and selection is greedy.
+
+\textcolor{red}{To reduce oscillatory subgoal switching---where the policy alternates between candidates at consecutive decisions---we introduce a hysteresis bonus $\beta_H = 0.15$ that is added to the Q-value of the previously selected subgoal before the argmax. This encourages the agent to commit to a subgoal for multiple decision steps unless a substantially better alternative emerges, producing smoother trajectories and more decisive cover utilization.}
+
+
+\subsection{Reward Function}
+The reward balances progress, safety, and stealth:
+\begin{equation}
+r_t = w_p (d_{t-1}^{\text{sub}} - d_{t}^{\text{sub}})
+      - w_e \,\mathbb{1}_{\text{exposed}_t}
+      - w_c \,\mathbb{1}_{\text{collision}_t}
+      - w_t.
+\end{equation}
+Bonuses are added for reaching a subgoal or the final goal:
+\begin{equation}
+r_t \leftarrow r_t +
+\begin{cases}
+b_{\text{subgoal}}, & \text{if subgoal reached},\\
+b_{\text{goal}}, & \text{if goal reached},\\
+\textcolor{red}{p_{\text{fail}},} & \textcolor{red}{\text{if episode timeout},}\\
+0, & \text{otherwise}.
+\end{cases}
+\end{equation}
+
+\subsection{Low-Level Execution}
+The low-level controller executes the selected subgoal using potential field forces that combine attraction, obstacle repulsion, adversary avoidance, and escape behaviors:
+\begin{equation}
+F_{\text{tot}}(\tau) = w_d F_{\text{des}} + w_o F_{\text{obs}} + w_e F_{\text{enemy}}
++ w_a F_{\text{ant}} + w_s F_{\text{esc}}.
+\end{equation}
+The resulting velocity command is smoothed and clipped by $v_{\max}$:
+\begin{equation}
+u_\tau = \beta v_\tau + (1-\beta)F_{\text{tot}}(\tau), \quad
+v_{\tau+1} = \mathrm{sat}_{v_{\max}}(u_\tau).
+\end{equation}
+This hybrid design ensures tactical subgoal reasoning at the high level while maintaining reactive, safe execution at the control level.
+
+\subsection{Training Procedure}
+We train the high-level policy $\pi_H$ with reinforcement learning using the reward above. The low-level controller $\pi_L$ is rule-based and parameter-tuned. This division keeps the state space manageable while enabling the high-level DTQN to focus on temporal and adversarial reasoning, and the low-level controller to guarantee safety.
+
+\textcolor{red}{To ensure stable Q-learning, the replay buffer stores full transitions $(h_t, R_t, \gamma^k, h_{t+1}, \text{done})$ rather than pre-computed TD targets to avoid stale-targets where pre-computed values become inconsistent as the policy evolves. Also, we use \emph{Double DQN} \cite{10.5555/3016100.3016191} where the online network selects the best next action $a^* = \arg\max_a Q_\theta(h_{t+1}, a)$, while the target network evaluates it as $Q_{\theta^-}(h_{t+1}, a^*)$, reducing Q-value overestimation that could cause a policy to confidently select poor subgoals.}
+
+% \section{Experimental Setup}
+
+% We evaluate our proposed hierarchical framework in 2D and 3D simulated environments designed to capture the challenges of stealth navigation in adversarial settings. The experiments assess how effectively the agent balances goal-directed progress, obstacle avoidance, and exposure minimization.
+
+% \begin{figure}[htbp]
+%     \centerline{\includegraphics[width=3.5in]{figures/chauh4.png}}
+%     \caption{2D training and evaluation featuring 5 enemy agents (red) and the agent (blue), tracking its path across the experiment. Note that intersections of enemy FoVs with the blue line are in the final state, and this experiment had no enemy exposure. The DTQN had chosen to use the obstacle circled in pink before going to the goal position, shown as a grey square at (15,15). Obstacles and enemy spawn points were randomized at the beginning of the experiment.}
+%     \label{fig:2d-environment}
+% \end{figure}
+
+% \subsection{2D Environment Design}
+% We consider a continuous, square workspace with bounds $[x_{\min}, x_{\max}] \times [y_{\min}, y_{\max}]$. A sample environment used for evaluation is shown in Fig.~\ref{fig:2d-environment}.
+% In our runs, we use $(x_{\min}, y_{\min})=(-5,-5)$ and $(x_{\max}, y_{\max})=(15,15)$ (a $20\times20$\,m area).
+% Static obstacles (which also act as occluders) are generated as random convex polygons:
+% \begin{itemize}
+%     \item \textbf{Polygon generation:} for each obstacle, a center $(c_x,c_y)$ is sampled uniformly within the workspace with a safety margin from the boundary, a radius $r\!\sim\!\mathcal{U}(0.5,2.0)$\,m is drawn, and $v\!\in\!\{3,\ldots,5\}$ vertices are formed by sampling random angles on $[0,2\pi)$, sorting them, and projecting points at distance $r$ from $(c_x,c_y)$. The resulting polygon is closed and stored as an obstacle.
+%     \item \textbf{Quantity and clutter:} the number of obstacles $N_{\text{obs}}$ is varied to produce open vs.\ cluttered maps; increasing $N_{\text{obs}}$ and/or the radius range yields narrower passages.
+% \end{itemize}
+% Enemies are initialized at random, well inside the workspace to avoid immediate wall contacts. Each enemy has:
+% \begin{itemize}
+%     \item \textbf{Kinematics:} a constant speed a heading that undergoes small random rotations, and simple wall interactions (bounce at boundaries). A short-range repulsive force keeps enemies off obstacle interiors.
+%     \item \textbf{Sensing model (FoV):} a primary sector with aperture $\theta_{\text{FoV}}$ and range $r_{\text{FoV}}$, plus a secondary $360^{\circ}$ ring with reduced range (fraction of $r_{\text{FoV}}$). Ray-casting against obstacle polygons yields non-convex visibility regions. This can be seen in Fig.~\ref{fig:2d-environment} 
+% \end{itemize}
+% The agent starts near the lower-left corner $(x_{\min},y_{\min})$ and must reach a goal near $(x_{\max}\!-\!1,\;y_{\max}\!-\!1)$. To diversify training maps, we randomize $N_{\text{obs}}$, obstacle radii, enemy count, and enemy initial headings, producing both open layouts and clutter with narrow passages. Occlusions from the polygonal obstacles truncate enemy FoVs and create cover that the agent can exploit.
+
+% \subsection{Training Details}
+% We train the high-level policy as a Deep Transformer Q-Network (DTQN) with temporal-difference learning (MSE loss). After executing up to $k$ low-level steps per decision, the targets are:
+% \[
+% R_t=\sum_{j=0}^{k-1}\gamma^{j} r_{t+j}.
+% \]
+% \[
+% \hat{Q}_t=
+% \begin{cases}
+% R_t, & \text{terminal},\\
+% R_t + \gamma^{k}\max_{i\in\mathcal{M}_{t+1}} Q_\theta\!\big(g_{t+1}^i\mid h_{t+1}\big), & \text{otherwise}.
+% \end{cases}
+% \]
+
+% We minimize $\tfrac{1}{2}\big(Q_\theta(g_t^{i^*}\!\mid h_t)-\hat{Q}_t\big)^2$ with Adam (lr $=10^{-3}$) and $\varepsilon$-greedy exploration ($\varepsilon=0.1$). We use $k=3$ (causal attention with positional encodings) and re-evaluate after at most $H=10$ low-level steps. Candidate subgoals are obstacle-centroid points (plus the goal) masked by simple heuristics (near-duplicate/too-distant rejections). Training proceeds online with periodic checkpointing and CSV logging.
+
+% \textit{Definitions:}
+% $r_{t+j}$ is the low-level reward at substep $t{+}j$; $\gamma\!\in\!(0,1)$ is the discount factor; 
+% $k$ is the number of low-level steps per high-level decision; 
+% $R_t$ is the discounted return accumulated over those $k$ steps; 
+% $\mathcal{M}_{t+1}$ is the valid candidate index set at the next decision; 
+% $Q_\theta(g\mid h)\!\in\!\mathbb{R}$ is the DTQN scalar Q for candidate $g$ given history $h$; 
+% $g_t^{i^*}$ is the candidate chosen at time $t$; 
+% $h_t$ is the length-$k$ history consumed by DTQN; 
+% $H$ is the maximum low-level horizon before re-evaluation.
+
+% \subsection{Baseline Methods}
+% We compare our approach against the following baselines:
+% \begin{itemize}
+%     \item \textbf{Visibility-Aware Greedy:} selects locally closest subgoals that minimize immediate FoV overlap.
+%     \item \textbf{Memory-less Hierarchical Approach:} similar approach as proposed, with ablation in which memory is removed.
+%     \item \textbf{DWA (FoV-limited):} Dynamic Window Approach configured with the same FoV constraints and obstacle polygons.
+%     \item \textbf{VFH+ (FoV-limited):} Vector Field Histogram local planner with visibility-aware cost layers.
+%     \item \textbf{Potential Fields + Predicted FoV Unions:} force-based model using obstacle repulsion and anticipatory repulsion from predicted enemy FoV unions (no learning).
+% \end{itemize}
+
+
+% \subsection{Evaluation Protocol}
+% For evaluation, we generate $100$ randomized test environments with varied enemy placements and obstacle layouts. Each method is run for $50$ episodes per environment, and results are averaged across all runs. Metrics collected include success rate, path length, time-to-goal, collision rate, and cumulative exposure time.
+
+\section{Experimental Setup}
+We evaluate our hierarchical framework in both 2D and 3D simulated environments that capture the challenges of stealth navigation in adversarial settings. The experiments measure how effectively the agent balances goal-directed progress, obstacle avoidance, and minimization of exposure to enemy FoVs.
+
+\begin{figure}[htbp]
+    \centerline{\includegraphics[width=3.5in]{figures/chauh3.png}}
+    \caption{2D training and evaluation setup with 5 enemy agents (red) and the navigating agent (blue). The agent’s trajectory avoids exposure by using cover (obstacle circled in pink) before reaching the goal (grey square at (15,15)). Enemy spawn points and obstacles are randomized at the start of each run.}
+    \label{fig:2d-environment}
+\end{figure}
+
+\subsection{2D Environment Design}
+We consider a continuous square workspace of size $20 \times 20$\,m, with bounds $[x_{\min},x_{\max}] \times [y_{\min},y_{\max}]$ where $(x_{\min},y_{\min})=(-5,-5)$ and $(x_{\max},y_{\max})=(15,15)$.  
+
+\textbf{Obstacles.} Static obstacles, which also serve as occluders, are generated as random convex polygons:
+\begin{itemize}
+    \item \emph{Polygon generation:} each obstacle is defined by a random center $(c_x,c_y)$, radius $r \!\sim\! \mathcal{U}(0.5,2.0)$\,m, and $v\!\in\!\{3,\ldots,5\}$ vertices projected at random angles.
+    \item \emph{Quantity and clutter:} the number of obstacles $N_{\text{obs}}$ is varied to create open versus cluttered maps, with larger $N_{\text{obs}}$ or radii yielding narrower passages.
+\end{itemize}
+
+\textbf{Enemies.} Adversarial agents are spawned at random interior positions:
+\begin{itemize}
+    \item \emph{Kinematics:} each enemy moves at constant speed with small random heading changes, bouncing off boundaries and avoiding obstacles with short-range repulsion.
+    \item \emph{Sensing model:} each enemy has a sector-shaped FoV with aperture $\theta_{\text{FoV}}$ and range $r_{\text{FoV}}$, augmented by a reduced-range $360^\circ$ ring. Ray-casting against obstacles yields non-convex visibility regions (see Fig.~\ref{fig:2d-environment}).
+\end{itemize}
+
+The agent begins near the lower-left corner and must reach a goal near $(x_{\max}-1, y_{\max}-1)$. Training maps are diversified by randomizing $N_{\text{obs}}$, obstacle radii, enemy count, and headings. Occlusions from polygonal obstacles naturally create cover opportunities.
+
+\subsection{Training Details}
+The high-level policy is trained as a DTQN using temporal-difference learning with mean-squared error loss. After up to $k$ low-level steps per high-level decision, the return target is:
+\[
+R_t = \sum_{j=0}^{k-1} \gamma^j r_{t+j},
+\]
+\textcolor{red}{
+\begin{equation}
+\hat{Q}_t =
+\begin{cases} 
+R_t, & \text{terminal} \\
+R_t + \gamma^k Q_{\theta^-} \Big( h_{t+1}, & \\ 
+\quad \arg\max_{i} Q_\theta(g_{t+1}^i \mid h_{t+1}) \Big), & \text{otherwise}
+\end{cases}
+\end{equation}
+where the Double DQN formulation uses the online network $Q_\theta$ to select the best next candidate and the target network $Q_{\theta^-}$ to evaluate it, reducing overestimation bias.
+}
+We minimize $\tfrac{1}{2}\big(Q_\theta(g_t^{i^*} \mid h_t) - \hat{Q}_t\big)^2$ with Adam (lr $=10^{-3}$) and $\varepsilon$-greedy exploration \textcolor{red}{($\varepsilon$ decaying from 1.0 to 0.08)}. We use $k=3$ (causal attention with positional encodings) and re-evaluate after at most \textcolor{red}{$H=20$} low-level steps. Candidate subgoals are sampled from obstacle centroids and the goal, with heuristics to reject near-duplicate or excessively distant points. Training proceeds online with periodic checkpointing.
+
+\subsection{Comparison Methods}
+
+We compare against the following baselines, implemented within the same simulation stack, geometry, sensing/FoV models, and episode protocol (identical environment generator, seeds, and metrics) to ensure comparable conditions:
+\begin{itemize}
+    \item \textbf{Potential Fields + Predicted FoV Unions:} A purely reactive controller combining goal attraction, obstacle repulsion, and an anticipatory repulsion from the union of predicted enemy FoVs, which is being used as the low level controller in HAVEN. The force field is computed from the same polygonal obstacles and enemy FoV geometry used for all methods, with identical smoothing and speed constraints in the dynamics integrator.
+    \item \textbf{LSTM (end-to-end):} An LSTM policy that outputs a direct 2D control vector at each high-level step based on compact task-aware features (agent pose/velocity, goal delta/distance, nearest obstacle clearance, enemy visibility, and enemy heading). Actions are integrated by the same dynamics model and subject to the same speed caps and smoothing; no MPC is used.
+    \item \textbf{LSTM HL + MPC:} A hierarchical variant where an LSTM serves as the high-level subgoal selector over the same candidate set as HAVEN (obstacle centroids plus goal with identical masking). The chosen subgoal is tracked by the same MPPI-style MPC and low-level dynamics as in our framework, using identical cost weights and limits. The LSTM Model used in this and the previous were the same, independently trained model, as we refrained from using the DTQN as a teacher since independent comparisons were desired. Training was similar in episode count to that of the DTQN used in HAVEN.  
+    \item \textbf{VFH+ (FoV-limited):} A histogram-based local planner constructed from the same obstacle polygons, augmented with penalties for heading bins that would place the agent within current enemy visibility polygons. Control outputs are integrated with the same smoothing and speed limits.
+    \item \textbf{Visibility-Aware Greedy:} Heading sampling with a cost that combines distance-to-goal, obstacle clearance penalties, and a binary exposure term based on the current enemy FoV union. Evaluated under the same time step and integration scheme.
+    \item \textbf{DWA (FoV-limited):} Dynamic Window Approach sampling linear/angular velocities and rolling out short-horizon dynamics with costs for goal progress, obstacle proximity, and enemy FoV exposure. Uses the same state integrator and limits.
+    \item \textbf{HAVEN, Memory-Less:} Our hierarchy with DTQN memory ablated by setting $k{=}1$ while keeping the same feature schema, candidate set, masking, and low-level controller.
+    \item \textbf{HAVEN (proposed):} Our full hierarchical DTQN high-level selector with the low-level controller.
+\end{itemize}
+\subsection{Evaluation Protocol}
+We generate $100$ randomized test environments with varied obstacle layouts and enemy placements. Each method is run for $50$ episodes per environment, and results are averaged. Metrics include success rate, path length, time-to-goal, collision rate, and cumulative exposure time, capturing efficiency, robustness, and stealth in adversarial navigation.
+
+
+% \section{Results}
+% \subsection{Quantitative Comparisons to Baselines}
+
+% We evaluate the proposed hierarchical solution against five baselines and/or ablations to the proposed solution across 100 randomized 2D environments generated from a common seed. The performance metrics include \emph{success rate}, \emph{collision rate}, \emph{path length}, \emph{time to goal}, and \emph{exposure time} (average number of steps under enemy field-of-view). The results are summarized in Table~\ref{tab:quantitative_results}.
+
+% The hierarchical method achieves a near-perfect success rate (99\%), 
+% outperforming all baselines. However, separating out the low-level controller only showed a decreased 49\% success rate. Compared to the DTQN variant without memory, the hierarchical solution reduces collision rate (0.04 vs.\ 0.20) and exposure time (2.38 vs.\ 4.20).
+
+% Against classical baselines, the hierarchical approach also maintains lesser instances of exposure to enemy agents. VFH and DWA yield shorter paths and/or lower times to goal, but at the cost of very high collision rates (52\% and 40\%, respectively) and elevated exposure rates. The visibility-aware greedy policy attains a relatively low exposure but suffers from a lower success rate (90\%) and higher rate of collisions (0.22).  
+
+% \begin{table*}[t]
+%     \centering
+%     \caption{Quantitative results across 100 randomized environments. 
+%     Significant values are highlighted in bold.}
+%     \label{tab:quantitative_results}
+%     \begin{tabular}{lccccc}
+%         \toprule
+%         \textbf{Method} & \textbf{Success} & \textbf{Collision} & 
+%         \textbf{Path Length} & \textbf{Time} & \textbf{Enemy Exposure} \\
+%         \midrule
+%         Hierarchical (proposed) & \textbf{0.99} & \textbf{0.04} & 30.7 & 31.0 & \textbf{2.38} \\
+%         Hierarchical, Memory-Less & 0.92 & 0.20 & 42.7 & 39.8 & 4.20 \\
+%         Potential Fields + Predicted FoV Unions & 0.49 & \textbf{0.02} & 37.5 & 34.1 & 5.98 \\
+%         VFH & 0.97 & 0.52 & 32.2 & 25.1 & 2.81 \\
+%         Visibility-Aware Greedy & 0.90 & 0.22 & 40.4 & 38.3 & 2.60 \\
+%         DWA & 0.84 & 0.40 & \textbf{28.3} & \textbf{15.3} & 17.23 \\
+%         \bottomrule
+%     \end{tabular}
+% \end{table*}
+
+
+
+
+
+% \begin{figure}[htbp]
+%     \centerline{\includegraphics[width=3.5in]{figures/chauh4.png}}
+%     \caption{The above depicts the method used for evaluating the 2D trained DTQN and potential field controller model in a 3D Unity-ROS environment where LIDAR point clouds are projected then polygonized by using an occupancy grid mapping to reduce noise and then output 2D polygons that are then passed into the same schema used in the 2D training. The outputted commands are converted to linear and angular velocities and published to the ROS topic for the agent. *For more detail on this, please see Fig.~\ref{fig:framework}}
+%     \label{fig:3d-extensions}
+% \end{figure}
+% \subsection{Extensions to 3D}
+% \textbf{Unity--ROS Integration and Point-Cloud Input.}
+% We deploy the 2D-trained DTQN unchanged in a 3D Unity--ROS environment by projecting perception onto the ground plane and preserving the 2D feature schema. The overall architecture for deploying 3D in the Unity--ROS environment is shown in Fig.~\ref{fig:3d-extensions}. At each control step, the robot receives a point cloud $\mathcal{P}=\{p_i\in\mathbb{R}^3\}$ and odometry $(x,y,\theta)$ from ROS. We form a 2D obstacle map by planar projection and polygonization:
+% \begin{align}
+% \mathcal{S} &= \{(p^x_i,p^y_i)\;:\;p_i\in\mathcal{P}\}, \\
+% \{\mathcal{O}_j\} &= \mathrm{PolyGen}\!\big(\,\mathcal{S}\,\big),
+% \end{align}
+% where $\mathrm{PolyGen}$ denotes a lightweight clustering/contouring and convexification pipeline that outputs Shapely polygons. To mitigate sparsity/noise, we use persistence filtering: an obstacle $\mathcal{O}_j$ is retained only if observed in at least $T_{\text{pers}}$ recent frames.
+
+% \paragraph{Feature and Candidate Construction (2D schema).}
+% From $\{\mathcal{O}_j\}$ we build a candidate set $\mathcal{G}_t=\{g_t^i\}$ using obstacle centroids (and the final goal), then apply a simple mask: reject candidates (i) within a small radius of the agent (near-duplicates) or (ii) farther than the agent-to-goal distance. For each valid candidate $g_t^i$, we compute the same 16-D feature vector $f_t^i\in\mathbb{R}^{16}$ as in 2D (agent pose/velocity, goal delta and distance, candidate geometry and distance, and enemy-visibility statistics). The DTQN input is $X_t^i\in\mathbb{R}^{k\times16}$ (the tiled sequence of $f_t^i$), and the scalar Q is taken from the last step.
+
+% \paragraph{High-Level Scoring and Selection.}
+% The DTQN outputs $Y_t^i=\mathrm{DTQN}_\theta(X_t^i)\in\mathbb{R}^{k\times1}$; the score is $Q_\theta(g_t^i\!\mid h_t)=\big[Y_t^i\big]_{k,1}$. We select
+% \begin{equation}
+% g_t \;=\;
+% \begin{cases}
+% \mathrm{Uniform}(\mathcal{M}_t), & \text{w.p. }\varepsilon,\\
+% \arg\max_{i\in\mathcal{M}_t} Q_\theta(g_t^i\!\mid h_t), & \text{w.p. }1-\varepsilon,
+% \end{cases}
+% \end{equation}
+% where $\mathcal{M}_t$ is the post-mask index set. When enabled, online TD updates use the same target definition as in 2D.
+
+% \paragraph{Enemies and Visibility in 3D.}
+% Enemy agents are simulated in Unity as other robots that can be read from ROS topics. We evaluate line-of-sight (LoS) on the 2D map using a sector-shaped primary FoV (aperture $\theta_{\text{FoV}}$, range $r_{\text{FoV}}$) plus a reduced-range secondary ring, similar to that of the 2D simulations used for training and primary evaluation. Ray-casting against $\{\mathcal{O}_j\}$ yields non-convex visibility polygons used for:
+% (i) features ($n_{\text{vis}}$, $\mathbb{1}_{\text{seen}}$, $d_{\min}^{\text{enemy}}$) and
+% (ii) anticipatory safety via predicted FoV unions treated as temporary obstacles.
+
+% \paragraph{Low-Level Command Synthesis (ROS).}
+% Let $p=(x,y)$ be the agent position in the map frame and $\theta$ its heading. The low-level controller composes a total force $F_{\text{tot}}\in\mathbb{R}^2$ (goal attraction, obstacle repulsion, enemy/FoV avoidance, and stuck-escape) and converts it to linear and angular velocity commands for ROS:
+% \begin{align}
+% v &= \|F_{\text{tot}}\|, \\
+% \theta_F &= \operatorname{atan2}(F_{\text{tot}}^y, F_{\text{tot}}^x), \quad
+% \Delta\theta = \mathrm{wrap}(\theta_F - \theta), \\
+% \omega &= \mathrm{sat}_{\omega_{\max}}\!\left(\frac{\Delta\theta}{\Delta t}\right),
+% \end{align}
+% where $v$ and $\omega$ are the forward and yaw rates (clipped to platform limits), and $\Delta t$ is the control period. The pair $(v,\omega)$ is published to a ROS topic; the next state $(x’,y’,\theta’)$ is read from an odometry ROS topic. Due to the simulation not being responsive to instantaneous commands and the delay due to computational time needed at each time step, the action is carried out for several seconds and then the point cloud is receieved and considered with the relative motion of the agent to reconstruct the obstacles. 
+
+% \paragraph{Practical Considerations.}
+% We use robot/world frame transforms from ROS to express all geometry in a common 2D map frame; enemy spawns are specified in world coordinates. To stabilize mapping under partial point clouds, we apply persistence thresholds to have obstacles’ presence extend through longer time horizons. The hierarchical stack, feature schema, and DTQN weights are reused from 2D without major architectural changes.
+\section{Results}
+
+\subsection{Quantitative Comparisons to Baselines}
+We evaluate the proposed hierarchy against five baselines/ablations over $100$ randomized 2D environments (common seed). Metrics include \emph{success rate}, \emph{collision rate}, \emph{path length}, \emph{time-to-goal}, and \emph{exposure time} (average steps under enemy FoV). Results are summarized in Table~\ref{tab:quantitative_results}.
+
+The hierarchical method achieves a near-perfect success rate (99\%) and the lowest exposure (2.38), outperforming all baselines. Removing temporal memory degrades safety and stealth (collision $0.20$ vs.\ $0.04$, exposure $4.20$ vs.\ $2.38$), indicating that short history improves cover utilization and reduces risky commitments. Classical planners (VFH, DWA) attain shorter paths and/or times but at substantially higher collision rates (52\% and 40\%, respectively) and elevated exposure, reflecting an unfavorable safety--speed trade-off in visibility-constrained settings. The visibility-aware greedy policy keeps exposure relatively low but is myopic, lowering success (90\%) and increasing collisions (0.22). A purely reactive potential-field variant with predicted FoV unions minimizes collisions (0.02) but suffers poor success (0.49) and higher exposure, highlighting the need for high-level temporal reasoning.
+
+\begin{table*}[t]
+    \centering
+    \caption{Quantitative results across $100$ randomized environments. Best (or tied best) values per column are in \textbf{bold}.}
+    \label{tab:quantitative_results}
+    \resizebox{0.9\textwidth}{!}{
+    \begin{tabular}{lccccc}
+        \toprule
+        \textbf{Method} & \textbf{Success} & \textbf{Collision} &
+        \textbf{Path Length} & \textbf{Time} & \textbf{Enemy Exposure} \\
+        \midrule
+        HAVEN (proposed) & \textbf{0.97} & \textbf{0.04} & 60.7 & 31.0 & \textbf{2.38} \\
+        HAVEN, Memory-Less & 0.92 & 0.20 & 42.7 & 39.8 & 4.20 \\
+        Potential Fields + Predicted FoV Unions & 0.49 & \textbf{0.02} & 37.5 & 34.1 & 5.98 \\
+        EnCOMP & NULL & NULL & NULL & NULL & NULL \\
+        LSTM (end-to-end) & 0.05 & 0.15 & 105.8 & 18.8 & 3.41 \\
+        LSTM HL + MPC & 0.30 & 0.70 & 56.2 & 16.6 & 3.49 \\
+        VFH & 0.97 & 0.52 & 32.2 & 25.1 & 2.81 \\
+        Visibility-Aware Greedy & 0.90 & 0.22 & 40.4 & 38.3 & 2.60 \\
+        DWA & 0.84 & 0.40 & \textbf{28.3} & \textbf{15.3} & 17.23 \\
+        \bottomrule
+    \end{tabular}
+    }
+\end{table*}
+
+
+\begin{figure}[htbp]
+    \centerline{\includegraphics[width=3.5in]{figures/chauh4.png}}
+    \caption{3D evaluation pipeline. A 2D-trained DTQN + low-level controller are deployed in Unity--ROS: LiDAR point clouds are projected to the ground plane, denoised via occupancy/persistence, polygonized, and fed to the 2D feature schema. Selected subgoals are executed as linear/angular velocity commands in ROS. The red circle depicts an adversarial threat in the point cloud.}
+    \label{fig:3d-extensions}
+\end{figure}
+
+\subsection{Extensions to 3D}
+\textbf{Unity--ROS integration and point-cloud input.}
+We deploy the 2D-trained DTQN unchanged in a 3D Unity--ROS environment by projecting perception to the ground plane and preserving the 2D feature schema (Fig.~\ref{fig:3d-extensions}). At each control step, the robot receives a point cloud $\mathcal{P}=\{p_i \in \mathbb{R}^3\}$ and odometry $(x,y,\theta)$ from ROS, forms a 2D obstacle set by planar projection and polygonization,
+\begin{align}
+\mathcal{S} &= \{(p_i^x,p_i^y):\, p_i\in\mathcal{P}\}, \\
+\{\mathcal{O}_j\} &= \mathrm{PolyGen}(\mathcal{S}),
+\end{align}
+and applies persistence filtering: an obstacle $\mathcal{O}_j$ is kept only if observed in at least $T_{\mathrm{pers}}$ recent frames.
+
+\paragraph{Feature and candidate construction (2D schema).}
+From $\{\mathcal{O}_j\}$ we build $\mathcal{G}_t=\{g_t^i\}$ using obstacle centroids and the goal, masking near-duplicates and candidates beyond the agent-to-goal distance. For each valid $g_t^i$, we compute the same 16-D feature vector $f_t^i$ (agent pose/velocity, goal delta/distance, candidate geometry/distance, and adversarial visibility statistics), tile to $X_t^i\in\mathbb{R}^{k\times 16}$, and score with the last DTQN output.
+
+\paragraph{High-level scoring and selection.}
+Given $Y_t^i=\mathrm{DTQN}_\theta(X_t^i)\in\mathbb{R}^{k\times 1}$, we set $Q_\theta(g_t^i\!\mid h_t)=[Y_t^i]_{k,1}$ and select
+\begin{equation}
+g_t =
+\begin{cases}
+\mathrm{Uniform}(\mathcal{M}_t), & \text{w.p. }\varepsilon,\\
+\arg\max_{i\in\mathcal{M}_t} Q_\theta(g_t^i\!\mid h_t), & \text{w.p. }1-\varepsilon,
+\end{cases}
+\end{equation}
+with $\mathcal{M}_t$ the post-mask index set. When enabled, online TD updates match the 2D targets.
+
+\paragraph{Enemies and visibility in 3D.}
+Enemy agents are simulated in Unity and read via ROS topics. We compute line-of-sight on the 2D map using a sector FoV (aperture $\theta_{\mathrm{FoV}}$, range $r_{\mathrm{FoV}}$) plus a reduced-range $360^\circ$ ring. Ray-casting against $\{\mathcal{O}_j\}$ yields non-convex visibility polygons used both for features ($n_{\mathrm{vis}}$, $\mathbb{1}_{\mathrm{seen}}$, $d_{\min}^{\mathrm{enemy}}$) and for anticipatory safety (predicted FoV unions as temporary obstacles).
+
+\paragraph{Low-level command synthesis (ROS).}
+Let $p=(x,y)$ be the agent pose in the map frame and $\theta$ its heading. We compose $F_{\mathrm{tot}}$ (goal attraction, obstacle and FoV avoidance, escape) and convert to linear/angular rates:
+\begin{align}
+v &= \|F_{\mathrm{tot}}\|, \\
+\theta_F &= \operatorname{atan2}(F_{\mathrm{tot}}^y, F_{\mathrm{tot}}^x), \quad
+\Delta\theta = \mathrm{wrap}(\theta_F-\theta), \\
+\omega &= \mathrm{sat}_{\omega_{\max}}\!\left(\frac{\Delta\theta}{\Delta t}\right).
+\end{align}
+Commands $(v,\omega)$ are published to ROS; the next state $(x’,y’,\theta’)$ is read from odometry. To accommodate computation/actuation latency, actions are held for several control periods before the next point-cloud update.
+
+\paragraph{Practical considerations.}
+We use ROS transforms to maintain a consistent 2D map frame. Persistence thresholds improve mapping stability under sparse/partial scans. Crucially, the hierarchical stack, feature schema, and DTQN weights are reused from 2D \emph{without architectural changes}, demonstrating direct transfer to 3D perception and control.
+
+\textcolor{red}{The 2D-to-3D transfer relies on two main assumptions.
+(1) \textbf{Planar environment:} Projecting LiDAR points $(p_i^x, p_i^y, p_i^z) \mapsto (p_i^x, p_i^y)$ discards elevation, which is valid for ground-level navigation with vertical obstacles but may fail in multi-layered settings or when adversarial FoVs pass above obstacles.
+(2) \textbf{Enemy dynamics:} Adversarial agents in 3D are read from ROS topics using the same kinematics and FoV model as in 2D, assuming FoVs remain approximated by planar sectors.
+Despite these constraints, the results suggest that temporal reasoning over visibility-aware subgoals is largely decoupled from perception, and the modular design allows targeted front-end upgrades (e.g., replacing $\mathrm{PolyGen}$ with a learned 3D-to-2D encoder) without retraining the high-level policy.}
+
+
+% \section{Analysis}
+% Table~\ref{tab:quantitative_results} shows that the hierarchical DTQN approach we propose achieves higher rates of success, safety, and enemy avoidance compared to other approaches tested. The memory-less ablation to the DTQN exhibits higher collision rates (0.20) and exposure to adversarial threats (4.20), which confirms that temporal reasoning aids in reducing exposure to such threats, given only partial observations.
+
+% Classical planners, on the other hand, demonstrate an expected advantage in speed, measured by time and path length, but are not as effective under environments with adversarial threats and visibility constraints. DWA attains the shortest time-to-goal (15.3) and path length (28.3), yet has a high collision rate (0.40) and relatively high exposure (17.23), illustrating an unfavorable safety–to-speed trade-off for the problem at hand. VFH has a similar competitive efficiency but a higher collision rate (0.52). The visibility-aware greedy baseline keeps exposure relatively low (2.60) but remains volatile (success 0.90, collision 0.22) due to its myopic nature.
+
+% Non-learning potential fields with predicted FoV unions result a low collision rate (0.02) but poor success rates (0.49) and a medium-high exposure (5.98), suggesting that purely reactive policies struggle with long-horizon choices such as when and how to detour for cover. 
+
+% Overall, the results indicate that: (1) memory is essential for risk-aware planning, specifically under partial observability; (2) visibility-aware features and candidate masking deliver a strong inductive bias; and (3) hierarchical decomposition of the problem lessens enemy exposure while avoiding the instability observed in end-to-end control.
+
+% \section{Discussion}
+% The DTQN’s attention over short histories mitigates observation aliasing, enabling consistent exploitation of occlusion and reducing exposure to adversarial threats without sacrificing goal progress. By restricting learning to high-level subgoals, we avoid the state-space complexity typical to end-to-end policies in cluttered maps with adversarial threats. Additionally, the visibility-aware feature schema and candidate pruning allow to focus learning on tactically relevant decisions (e.g., cover vs.\ exposure) rather than geometric nuances that are not relevant to a high-level decision making process.
+
+% This decomposition also eases transfer as the 2D–3D extension reuses the same feature space via planar point-cloud projection, requiring no architectural changes to the high-level policy. In 3D simulations, we have observed robust behavior despite sensing noise, attributable to feature normalization and persistence filtering in the mapping pipeline. One of the limitations in the 3D application in Unity is that the inter-step computational time causes unsmooth behavior, but can be fixed with latency-aware feedback control.
+
+% \section{Future Work}
+% Future directions of the contributions of this work include:
+% \begin{itemize}
+%     \item \textbf{Adversarial dynamics and collaborative policies:} model enemy intent by tracking their motion, extend to cooperative environments for multiple agents.
+%     \item \textbf{Add path corridor features per candidate to DTQN:} construct a predicted path and consider min distance to predicted FOV along the path, number of predicted exposures, expected time-to-clear for path corridor.
+%     \item \textbf{Global mapping and uncertainty:} integrate lightweight mapping, visibility graphs, and risk-aware planning to evaluate exposure–time trade-offs.
+%     \item \textbf{Real-robot deployment:} closed-loop, latency-aware control, robust perception with lower signal to noise ratio from sensors, unpredictable enemy policies for physical world evaluation.
+% \end{itemize}
+
+% \section{Conclusion}
+% We introduce a hierarchical, memory-augmented approach to enemy-aware navigation, coupling a high-level DTQN-based subgoal selector with a low-level potential field navigational controller. Using visibility-aware features and candidate masking, the method achieves higher success, safety, and stealth rates (measured by exposure time) relative to classical path-planning algorithms and relevant baselines, while maintaining competitive efficiency. The ability to extend this architecture into a 3D simulated world in Unity (simulating FoV via point-cloud projection) demonstrates the flexibility in its applications and methods to reduce the problem in 3D onto the same 2D schema on which the DTQN was trained in. The results, comparing various models and ablations to this approach, highlight the value of memory and the benefits of a multi-level path planning approach under partial observability problems, suggesting a potential path toward safe, autonomous navigation in adversarial environments.
+
+
+\section{Analysis}
+Table~\ref{tab:quantitative_results} shows that the proposed hierarchical DTQN consistently outperforms baselines in success, safety, and adversarial exposure. The memory-less variant exhibits higher collision (0.20) and exposure (4.20), confirming that temporal reasoning is crucial under partial observability.  
+
+Classical planners show an expected advantage in efficiency (shorter paths and times) but degrade under adversarial constraints. DWA achieves the shortest time-to-goal (15.3) and path length (28.3), but with high collision (0.40) and exposure (17.23), reflecting an unfavorable safety–speed trade-off. VFH is similarly competitive in efficiency but unstable, with a 0.52 collision rate.  
+
+The visibility-aware greedy baseline reduces exposure (2.60) but remains volatile (success 0.90, collision 0.22) due to its myopic, one-step decisions. Reactive potential fields with predicted FoV unions yield a low collision rate (0.02) but poor success (0.49) and moderate exposure (5.98), highlighting the limitations of purely reactive policies without temporal reasoning.  
+
+Adding LSTM baselines provides further perspective. The LSTM (end-to-end) controller has an extremely low success rate (0.05) with moderate collision rate (0.15), abnormally long paths (mean 105.8), and slightly higher exposure rate (3.41), suggesting that direct action output models may require more extensive training to make strategic progress. On the other hand, the LSTM HL + MPC hierarchical approach improves success (0.30) and achieves shorter time-to-goal when successful (16.6) with longer path lengths (56.2), but exhibits a high collision rate (0.70) and higher average exposure (3.49). This indicates that hierarchical decomposition with MPC helps efficiency, however without extensive training of the LSTM, there is a lack of stronger temporal reasoning and visibility-aware subgoal selection relative to HAVEN.
+
+Overall, these results indicate that:  
+(1) memory is essential for risk-aware planning under partial observability;  
+(2) visibility-aware features and candidate masking provide an effective inductive bias; and  
+(3) hierarchical decomposition reduces adversarial exposure while avoiding the instability of end-to-end reactive control.  
+
+\section{Discussion}
+The DTQN’s short-horizon attention mitigates observation aliasing, enabling consistent exploitation of occlusion and reducing adversarial exposure without compromising goal progress. Restricting learning to high-level subgoal selection avoids the large state-space complexity of end-to-end control in cluttered, adversarial maps. Visibility-aware features and candidate pruning further focus learning on tactically relevant trade-offs (e.g., cover vs.\ exposure) rather than low-level geometric details.  
+
+This decomposition also eases transfer: the 2D–3D extension reuses the same feature schema via planar point-cloud projection, requiring no changes to the high-level architecture. In 3D Unity--ROS experiments, behavior remains robust despite sensing noise, aided by normalization and persistence filtering. A noted limitation is occasional unsmooth motion due to latency between perception and control, suggesting the need for latency-aware feedback mechanisms.  
+
+\section{Future Work}
+Future directions include:
+\begin{itemize}
+    \item \textbf{Adversarial dynamics and collaboration:} explicitly model enemy intent and extend to multi-agent cooperative settings.
+    \item \textbf{Path corridor reasoning:} augment candidate features with predicted path corridors (minimum distance to FoVs, expected exposures, clearance times).
+    \item \textbf{Physical-world deployment:} real-robot experiments with closed-loop, latency-aware control and robust perception under sensor noise and unpredictable adversarial policies.
+    \textcolor{red}{\item \textbf{3D-native perception:} replace the planar projection pipeline with learned 3D-to-feature encoders to handle multi-level environments and non-planar occlusion.}
+\end{itemize}
+
+\section{Conclusion}
+We introduced a hierarchical, memory-augmented framework for adversarial navigation, coupling a DTQN-based subgoal selector with a low-level potential field controller. The design leverages visibility-aware features and candidate masking to achieve higher success, safety, and stealth relative to classical planners and baselines, while remaining competitive in efficiency. \textcolor{red}{Key formulations: Double DQN for stable Q-value estimation, visibility-aware candidate masking for safety-biased exploration, and subgoal hysteresis for trajectory smoothness all benefit overall performance, as validated by training stability analysis and ablation studies.}
+
+Importantly, the approach transfers directly from 2D to 3D via point-cloud projection, demonstrating architectural flexibility and practical scalability. Comparisons against baselines and ablations highlight the benefits of temporal memory and hierarchical decomposition for navigation under partial observability. These findings suggest a promising path toward safe and reliable autonomous navigation in adversarial, visibility-constrained environments.
+
+\section*{ACKNOWLEDGMENTS}
+This material is based upon work supported in part by the DEVCOM Army Research Laboratory under cooperative agreement : W911NF2520170.
+
+{\small
+\bibliographystyle{IEEEtran}
+\bibliography{references}
+}
+
+
+\end{document}

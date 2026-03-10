@@ -1,0 +1,146 @@
+### Title
+DTQN for FoV‑Constrained Navigation: Memory‑Augmented Subgoal Selection in 2D with Extensions to 3D Point‑Cloud Robotics
+
+### Abstract (150–200 words)
+- Problem: Safe navigation under severe partial observability from limited field‑of‑view (FoV).
+- Approach: A hierarchical two‑level stack: a DTQN high‑level subgoal selector operating on short observation histories, coupled with a low‑level controller that tracks waypoints while respecting dynamics and safety.
+- Model I/O: Input is a sequence of k time steps of a 16‑D feature vector per candidate; output is a scalar Q at the final step used to rank subgoals.
+- Deployment: 2D navigation with visibility/occlusion constraints; extension to 3D via Unity‑ROS and real point‑cloud pipelines.
+- Results: Strong gains over classical planners and RL baselines in success rate, safety margins, and time‑to‑goal; ablations confirm the role of memory, hierarchy, and candidate‑set design.
+- Key novelty statements.
+
+### I. Introduction
+- Motivation: Navigation with limited sensing and occlusions; why memory matters.
+- Gap: Classical local planners and memory‑less RL degrade under FoV and occlusion.
+- Contributions:
+  - DTQN‑based subgoal scorer for FoV‑constrained, partially observable navigation.
+  - Compact, task‑aware feature design and candidate‑generation mechanism in 2D.
+  - Unified interface to 3D via point‑cloud projection/aggregation; Unity‑ROS evaluation.
+  - Comprehensive numerical comparisons and ablations isolating memory, FoV width, and candidate sets.
+- Figure suggestion: Fig.1 — System overview (2D pipeline with extension to 3D).
+
+### II. Related Work
+- Memory in RL (RNNs, Transformers) for POMDPs; local planning under partial observability.
+- Classical obstacle avoidance (VFH+, DWA) and sampling‑based planning with limited sensing.
+- Point‑cloud perception for navigation; Unity/ROS simulation for benchmarking.
+- Table (optional in appendix): Taxonomy positioning DTQN vs memory‑less RL and classical.
+
+### III. Problem Formulation
+- Formalize navigation as a POMDP with FoV‑limited observations.
+- State and observation: 2D features for candidate subgoals; occlusion and “enemy visibility” constraints.
+- Action space: discrete subgoal selections (high‑level) and/or low‑level actions (variant).
+- Reward: goal progress, collision penalty, visibility penalty (being “seen”), action efficiency.
+- Metrics: success rate, time‑to‑goal, path length, min obstacle distance, visibility exposure, collision rate, compute rate (Hz).
+- Equation box: Q‑learning objective with causal modeling of history.
+
+### IV. Method
+- Hierarchical stack overview:
+  - High level: DTQN‑based subgoal scorer selects a waypoint from a candidate set under FoV and visibility constraints.
+  - Low level: trajectory follower (PID/MPC/velocity commands) that tracks the chosen subgoal and handles short‑horizon collision avoidance.
+  - Safety layer: candidate masking via line‑of‑sight, obstacle clearance, and visibility exposure limits.
+- DTQN architecture and I/O:
+  - Input per candidate: sequence length k of a 16‑D feature vector [agent_x, agent_y, vel_x, vel_y, goal_dx, goal_dy, dist_goal, cand_x, cand_y, agent_to_cand_dx, agent_to_cand_dy, dist_cand, num_enemies, min_enemy_to_cand_dist, num_enemies_seeing_cand, any_enemy_sees_agent].
+  - Positional encoding for k steps; causal multi‑head attention layers; linear head.
+  - Defaults from implementation: d_model=64, n_heads=4, n_layers=3; output shape (B, k, output_dim); we use the last step.
+  - Output: scalar Q per candidate at the final step; ε‑greedy or argmax selection.
+- Candidate generation in 2D:
+  - Free‑space polygon decomposition and subgoal centroids along safe frontiers; invalidate candidates occluded or too close to obstacles/enemies.
+  - Mask rules from implementation: avoid candidates within a small radius of current location; avoid candidates farther than the final goal distance.
+  - Novelty: visibility‑aware scoring features and exposure‑aware masking integrated into the RL training signal.
+- End‑to‑end system pipeline (2D → 3D):
+  - Perception: 2D map or 3D point cloud; persistence filtering of transient obstacles.
+  - Candidate set: generate safe candidates; compute 16‑D features for each.
+  - DTQN scoring: tile features to k, infer Q; choose best candidate.
+  - Control: low‑level controller executes towards chosen subgoal; force↔velocity mapping for ROS cmd_vel; odom feedback closes the loop.
+  - Anticipatory safety: predicted enemy FOV unions treated as temporary obstacles to shape low‑level forces.
+  - 3D extension: point‑cloud to features via voxelization/range‑image/slices projected into the same 16‑D schema for DTQN reuse.
+- Training details:
+  - Replay buffer with sequences of length k; target network; MSE loss on TD targets; online updates during rollout with next‑candidate max for bootstrapping.
+  - Reward shaping: goal progress, collision penalty, visibility exposure penalty, control smoothness.
+  - Curriculum: increase clutter/enemy density and narrow FoV over training; stochastic observation dropouts to mimic sensor gaps.
+  - Optimization: Adam, learning rate schedule; gradient clipping; mixed‑precision optional; periodic checkpointing and CSV logging of decisions/Qs.
+- Figures:
+  - Fig.2 — Hierarchical stack and data flow.
+  - Fig.3 — DTQN with causal masking and learned positional encoding.
+  - Fig.4 — 3D point‑cloud to 2D‑compatible features pipeline (Unity‑ROS).
+
+### V. Experimental Setup
+- Environments:
+  - 2D FoV‑limited worlds with clutter and occluders; enemy visibility cones.
+  - 3D Unity‑ROS scenes with varied density/occlusion and dynamic obstacles.
+- Baselines:
+  - Classical: VFH+/DWA (FoV‑limited), A*/RRT* with local maps, MPC local planners.
+  - RL: DQN, LSTM‑DQN/GRU‑DQN, PPO, Transformer without causal masking or without positional encoding.
+  - Heuristic candidate selector (distance‑to‑goal).
+- Protocols: train/validation/test splits; seeds; sim‑to‑sim; sim‑to‑real (if applicable).
+- Implementation details: hardware, training time, hyperparameters.
+- Table placeholder: env parameters and dataset statistics.
+
+### VI. Results: 2D (Primary Focus)
+- Main quantitative comparisons (put your strongest table here, page‑center):
+  - Table 1 — Mean±Std across seeds: success rate, time‑to‑goal, path length, min obstacle distance, collision rate, visibility exposure time, control effort, Hz.
+  - Include hierarchical variants: (a) DTQN high‑level + low‑level control (ours), (b) low‑level only planner (no high‑level), (c) memory‑less high‑level (MLP), (d) LSTM/GRU high‑level.
+- Curves/plots:
+  - Fig.5 — Success vs FoV width; success vs clutter; exposure vs enemy density; success vs sequence length k.
+  - Fig.6 — Learning curves: sample efficiency vs baselines; wall‑clock compute vs success.
+- Qualitative:
+  - Fig.7 — Trajectories and subgoal choices; attention heatmaps over time for interpretability.
+
+### VII. Extensions to 3D (Unity‑ROS, Point Cloud)
+- Quantitative:
+  - Table 2 — 3D benchmarks matching 2D metrics; report transfer from 2D‑trained to 3D‑finetuned.
+- Robustness:
+  - Noise/occlusion stress tests, point‑cloud sparsity, frame drops.
+- Qualitative:
+  - Fig.8 — 3D scenes and point‑cloud slices; subgoal selections; videos referenced.
+
+### VIII. Ablations and Analysis
+- Memory components:
+  - Remove attention, remove positional encoding, vary k, vary heads/layers; replace with LSTM/GRU.
+  - Table 3a — DTQN I/O ablations: feature subsets (drop visibility terms, drop enemy distances), effect on safety and exposure.
+- Hierarchical stack:
+  - Table 3b — With vs without high‑level; heuristic vs learned selector; candidate masking on/off.
+- FoV sensitivity and compute:
+  - Success and exposure vs FoV; FPS vs model size/k; latency breakdown (perception vs policy vs control).
+
+### IX. Discussion
+- Why DTQN helps under partial observability; generalization across layouts and sensing noise.
+- Transfer: 2D→3D feature parity; where domain gaps remain.
+- Safety trade‑offs: exposure vs time‑to‑goal; candidate density vs compute.
+
+### X. Limitations and Future Work
+- Dynamic obstacles with adversarial intent; multi‑agent coordination.
+- Long‑horizon exploration beyond k; integrating global mapping.
+- Real‑robot trials and hardware constraints; full sim‑to‑real pipeline.
+
+### XI. Conclusion
+- Reiterate memory‑augmented subgoal selection under FoV limits, strong 2D gains, seamless 3D applicability via point‑cloud features.
+- Key takeaways and broader impact.
+
+### Reproducibility and Assets (ICRA‑friendly)
+- Open‑source code, checkpoints, configs.
+- Video attachments: 2D animations, Unity‑ROS runs.
+- Dataset splits and seeds.
+
+### Where to place numerical comparisons (to maximize acceptance odds)
+- Table 1 (Section VI): Main 2D SOTA comparison — center of page, large font.
+- Table 2 (Section VII): 3D Unity‑ROS results — directly after 3D description.
+- Table 3 (Section VIII): Ablations — compact but comprehensive.
+- Additional per‑scenario tables/plots in the Appendix (e.g., FoV width sweeps, clutter levels, compute FPS).
+
+### Page budget guidance (8 pages + refs)
+- 0.5 Abstract + teaser Fig.1
+- 1.0 Intro + contributions
+- 0.75 Related
+- 1.0 Problem
+- 1.5 Method (Figs.2–4)
+- 1.5 Results 2D (Table 1, Figs.5–7)
+- 0.75 3D results (Table 2, Fig.8)
+- 0.75 Ablations (Table 3, Fig.9)
+- 0.25 Discussion/Limitations/Conclusion
+- References overflow as needed
+
+### Novelty highlights to emphasize (throughout)
+- Bold, unique angle: memory‑augmented subgoal selection specifically tailored for FoV‑constrained navigation, with learned temporal reasoning over short observation histories.
+- Task‑aware 2D feature design combining goal progress, occlusion/visibility, and enemy proximity; principled candidate generation with safety masks.
+- Clean extension path to 3D by projecting point‑clouds into the same feature space, enabling reuse of the learned strategy and validating efficacy in Unity‑ROS.

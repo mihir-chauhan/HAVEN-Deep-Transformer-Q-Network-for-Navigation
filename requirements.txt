@@ -1,0 +1,10 @@
+numpy
+matplotlib
+Shapely
+torch
+scipy
+scikit-learn
+ipython
+opencv-python
+ffmpeg-python
+pillow

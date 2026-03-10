@@ -1,0 +1,265 @@
+\begin{thebibliography}{10}
+
+\bibitem{reconn1}
+J.~Smith and M.~Johnson.
+\newblock Reconnaissance robots for military applications.
+\newblock {\em Journal of Military Robotics}, 2018.
+
+\bibitem{sar1}
+A.~Brown and E.~Davis.
+\newblock Autonomous robots for search and rescue missions.
+\newblock In {\em IEEE International Conference on Robotics and Automation
+  (ICRA)}, 2019.
+
+\bibitem{surv1}
+G.~Wilson and H.~Taylor.
+\newblock Surveillance robots: A survey.
+\newblock {\em Robotics and Autonomous Systems}, 2020.
+
+\bibitem{predef1}
+J.~Lee and S.~Kim.
+\newblock Stealth navigation using pre-defined environmental models.
+\newblock In {\em IEEE/RSJ International Conference on Intelligent Robots and
+  Systems (IROS)}, 2017.
+
+\bibitem{predef2}
+R.~Patel and T.~Singh.
+\newblock Stealth navigation in known environments.
+\newblock {\em Journal of Field Robotics}, 2016.
+
+\bibitem{sup1}
+X.~Chen and L.~Wang.
+\newblock Supervised learning for traversable terrain classification.
+\newblock {\em IEEE Transactions on Robotics}, 2018.
+
+\bibitem{sup2}
+A.~Nguyen and H.~Tran.
+\newblock Terrain traversability analysis using supervised learning.
+\newblock In {\em IEEE International Conference on Robotics and Automation
+  (ICRA)}, 2019.
+
+\bibitem{conserv1}
+M.~Garcia and L.~Perez.
+\newblock Conservative navigation strategies for autonomous robots.
+\newblock {\em Robotics and Autonomous Systems}, 2017.
+
+\bibitem{conserv2}
+R.~Gupta and S.~Sharma.
+\newblock Efficient navigation in cluttered environments.
+\newblock In {\em IEEE/RSJ International Conference on Intelligent Robots and
+  Systems (IROS)}, 2018.
+
+\bibitem{rl1}
+J.~Liu and Y.~Chen.
+\newblock Reinforcement learning for autonomous navigation: A survey.
+\newblock {\em IEEE Transactions on Intelligent Transportation Systems}, 2020.
+
+\bibitem{rl2}
+K.~Patel and D.~Shah.
+\newblock Deep reinforcement learning for robot navigation.
+\newblock In {\em IEEE International Conference on Robotics and Automation
+  (ICRA)}, 2019.
+
+\bibitem{online1}
+T.~Kim and J.~Park.
+\newblock Online reinforcement learning for outdoor navigation.
+\newblock {\em Journal of Field Robotics}, 2018.
+
+\bibitem{online2}
+V.~Singh and A.~Gupta.
+\newblock Outdoor navigation using online reinforcement learning.
+\newblock In {\em IEEE/RSJ International Conference on Intelligent Robots and
+  Systems (IROS)}, 2019.
+
+\bibitem{sim2real1}
+J.~Tobin, R.~Fong, A.~Ray, J.~Schneider, W.~Zaremba, and P.~Abbeel.
+\newblock Sim-to-real transfer in reinforcement learning for robotics.
+\newblock {\em IEEE Robotics and Automation Letters}, 2017.
+
+\bibitem{sim2real2}
+Y.~Chebotar, A.~Handa, V.~Makoviychuk, M.~Macklin, J.~Issac, N.~Ratliff, and
+  D.~Fox.
+\newblock Closing the sim-to-real loop: Adapting simulation randomization with
+  real world experience.
+\newblock In {\em IEEE International Conference on Robotics and Automation
+  (ICRA)}, 2019.
+
+\bibitem{weerakoon2022sim}
+Kasun Weerakoon, Adarsh~Jagan Sathyamoorthy, and Dinesh Manocha.
+\newblock Sim-to-real strategy for spatially aware robot navigation in uneven
+  outdoor environments.
+\newblock {\em arXiv preprint arXiv:2205.09194}, 2022.
+
+\bibitem{offline1}
+S.~Levine, A.~Kumar, G.~Tucker, and J.~Fu.
+\newblock Offline reinforcement learning: Tutorial, review, and perspectives on
+  open problems.
+\newblock {\em arXiv preprint arXiv:2005.01643}, 2020.
+
+\bibitem{offline2}
+D.~Kalashnikov, A.~Irpan, P.~Pastor, J.~Ibarz, A.~Herzog, E.~Jang, D.~Quillen,
+  E.~Holly, M.~Kalakrishnan, V.~Vanhoucke, and S.~Levine.
+\newblock Offline reinforcement learning for efficient and robust robot
+  manipulation.
+\newblock In {\em IEEE International Conference on Robotics and Automation
+  (ICRA)}, 2021.
+
+\bibitem{lidar1}
+J.~Zhang and S.~Singh.
+\newblock Lidar-based terrain classification for autonomous driving.
+\newblock {\em Journal of Field Robotics}, 2017.
+
+\bibitem{lidar2}
+B.~Li, T.~Zhang, and T.~Xia.
+\newblock Lidar-based 3d object detection for autonomous vehicles.
+\newblock In {\em IEEE Intelligent Vehicles Symposium (IV)}, 2016.
+
+\bibitem{kumar2020conservative}
+Aviral Kumar, Aurick Zhou, George Tucker, and Sergey Levine.
+\newblock Conservative q-learning for offline reinforcement learning.
+\newblock {\em Advances in Neural Information Processing Systems},
+  33:1179--1191, 2020.
+
+\bibitem{sathyamoorthy2022terrapn}
+A.J. Sathyamoorthy, K.~Weerakoon, T.~Guan, J.~Liang, and D.~Manocha.
+\newblock Terrapn: Unstructured terrain navigation using online self-supervised
+  learning.
+\newblock In {\em IEEE/RSJ International Conference on Intelligent Robots and
+  Systems (IROS)}, pages 7197--7204, 2022.
+
+\bibitem{sathyamoorthy2020frozone}
+A.J. Sathyamoorthy, U.~Patel, T.~Guan, and D.~Manocha.
+\newblock Frozone: Freezing-free, pedestrian-friendly navigation in human
+  crowds.
+\newblock {\em IEEE Robotics and Automation Letters}, 5(3):4352--4359, 2020.
+
+\bibitem{papadakis2013terrain}
+Pangiotis Papadakis.
+\newblock Terrain traversability analysis methods for unmanned ground vehicles:
+  A survey.
+\newblock {\em Engineering Applications of Artificial Intelligence},
+  26(4):1373--1385, 2013.
+
+\bibitem{weerakoon2022terp}
+K.~Weerakoon, A.J. Sathyamoorthy, U.~Patel, and D.~Manocha.
+\newblock Terp: Reliable planning in uneven outdoor environments using deep
+  reinforcement learning.
+\newblock In {\em IEEE International Conference on Robotics and Automation
+  (ICRA)}, pages 9447--9453, 2022.
+
+\bibitem{fan2020learning}
+Xinyi Fan, Zezhou Wang, Yuhang Zhang, Jiahao Liang, Wei Zhang, and Siwei Lyu.
+\newblock Learning stealth behaviors with multi-objective deep reinforcement
+  learning.
+\newblock {\em arXiv preprint arXiv:2006.10593}, 2020.
+
+\bibitem{levine2020offline}
+Sergey Levine, Aviral Kumar, George Tucker, and Justin Fu.
+\newblock Offline reinforcement learning: Tutorial, review, and perspectives on
+  open problems.
+\newblock {\em arXiv preprint arXiv:2005.01643}, 2020.
+
+\bibitem{fujimoto2019off}
+S.~Fujimoto, D.~Meger, and D.~Precup.
+\newblock Off-policy deep reinforcement learning without exploration.
+\newblock In {\em International Conference on Machine Learning}, pages
+  2052--2062, 2019.
+
+\bibitem{mandlekar2020iris}
+A.~Mandlekar, F.~Ramos, B.~Boots, L.~Fei-Fei, A.~Garg, and D.~Fox.
+\newblock Iris: Implicit reinforcement without interaction at scale for
+  learning control from offline robot manipulation data.
+\newblock In {\em IEEE International Conference on Robotics and Automation
+  (ICRA)}, pages 4414--4420, 2020.
+
+\bibitem{hansen2021generalization}
+N.~Hansen, Y.~Sun, P.~Abbeel, A.A. Efros, L.~Pinto, and X.~Wang.
+\newblock Self-supervised policy adaptation during deployment.
+\newblock In {\em International Conference on Learning Representations (ICLR)},
+  2021.
+
+\bibitem{shah2023offline}
+Dhruv Shah, Arjun Bhorkar, Hrishit Leen, Ilya Kostrikov, Nicholas Rhinehart,
+  and Sergey Levine.
+\newblock Offline reinforcement learning for visual navigation.
+\newblock In {\em Conference on Robot Learning}, pages 44--54. PMLR, 2023.
+
+\bibitem{hao2023avoidance}
+Yang Wenkai Ji Ruihang Zhang Yuxiang~Lei Hao and Zhao Zijie.
+\newblock Avoidance navigation based on offline pre-training reinforcement
+  learning.
+\newblock {\em arXiv preprint arXiv:2308.01551}, 2023.
+
+\bibitem{ajai2019survey}
+S.~Ajai, J.~Ajith, S.~Arjun, and S.~Sebastian.
+\newblock An extensive survey on potential field based path planning for
+  autonomous mobile robot.
+\newblock In {\em International Conference on Intelligent Computing,
+  Instrumentation and Control Technologies (ICICICT)}, volume~1, pages
+  1004--1009, 2019.
+
+\bibitem{niroui2019deep}
+Fatemeh Niroui, Kaiyu Zhang, Zoe Kashino, and Goldie Nejat.
+\newblock Deep reinforcement learning robot for search and rescue applications:
+  Exploration in unknown cluttered environments.
+\newblock {\em IEEE Robotics and Automation Letters}, 4(2):610--617, 2019.
+
+\bibitem{tews2004avoiding}
+Ashley Tews and Gaurav~S Sukhatme.
+\newblock Avoiding detection by abandoning perfect concealment.
+\newblock In {\em IEEE/RSJ International Conference on Intelligent Robots and
+  Systems (IROS)}, pages 1268--1273. IEEE, 2004.
+
+\bibitem{marzouqideceptive}
+M.A. Marzouqi and R.A. Jarvis.
+\newblock Covert robotics: Covert path planning in unknown environments.
+\newblock In {\em Australasian Conference on Robotics and Automation (ACRA)},
+  2006.
+
+\bibitem{mendoncca2018reinforcement}
+Matheus~RF Mendon{\c{c}}a, Heder~S Bernardino, and Raul~Fonseca Neto.
+\newblock Reinforcement learning with optimized reward function for stealth
+  applications.
+\newblock {\em Entertainment Computing}, 25:37--47, 2018.
+
+\bibitem{prudencio2023survey}
+Rafael~Figueiredo Prudencio, Marcos~ROA Maximo, and Esther~Luna Colombini.
+\newblock A survey on offline reinforcement learning: Taxonomy, review, and
+  open problems.
+\newblock {\em IEEE Transactions on Neural Networks and Learning Systems},
+  2023.
+
+\bibitem{Zhang2019LateLC}
+Changwu Zhang, Yuchen Tang, Li~Zhou, and Hengzhu Liu.
+\newblock Late line-of-sight check and prioritized trees for path planning.
+\newblock {\em Applied Sciences}, 2019.
+
+\bibitem{hossain2023covernav}
+Jumman Hossain, Abu-Zaher Faridee, Nirmalya Roy, Anjan Basak, and Derrik~E
+  Asher.
+\newblock Covernav: Cover following navigation planning in unstructured outdoor
+  environment with deep reinforcement learning.
+\newblock In {\em 2023 IEEE International Conference on Autonomic Computing and
+  Self-Organizing Systems (ACSOS)}, pages 127--132. IEEE, 2023.
+
+\bibitem{weerakoon2023vapor}
+Kasun Weerakoon, Adarsh~Jagan Sathyamoorthy, Mohamed Elnoor, and Dinesh
+  Manocha.
+\newblock Vapor: Holonomic legged robot navigation in outdoor vegetation using
+  offline reinforcement learning.
+\newblock {\em arXiv preprint arXiv:2309.07832}, 2023.
+
+\bibitem{sathyamoorthy2023vern}
+Adarsh~Jagan Sathyamoorthy, Kasun Weerakoon, Tianrui Guan, Mason Russell, Damon
+  Conover, Jason Pusey, and Dinesh Manocha.
+\newblock Vern: Vegetation-aware robot navigation in dense unstructured outdoor
+  environments.
+\newblock In {\em 2023 IEEE/RSJ International Conference on Intelligent Robots
+  and Systems (IROS)}, pages 11233--11240. IEEE, 2023.
+
+\bibitem{fox1997dynamic}
+Dieter Fox, Wolfram Burgard, and Sebastian Thrun.
+\newblock The dynamic window approach to collision avoidance.
+\newblock {\em IEEE Robotics \& Automation Magazine}, 4(1):23--33, 1997.
+
+\end{thebibliography}

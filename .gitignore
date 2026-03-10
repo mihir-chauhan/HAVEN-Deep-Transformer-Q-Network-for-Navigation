@@ -1,0 +1,50 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.eggs/
+dist/
+build/
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Checkpoints (large; keep dtqn_checkpoint.pt for demo if desired)
+# *.pt
+# *.pth
+# *.ckpt
+
+# Training/eval videos (generated)
+train/videos/
+eval/videos/
+
+# Large media (optional: commit a small demo video)
+# *.mp4
+# *.avi
+
+# Data dumps (pointcloud_dump, obstacle_data, etc.)
+pointcloud_dump.json
+obstacle_data.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Temporary
+*.log
+*.tmp
+*.temp

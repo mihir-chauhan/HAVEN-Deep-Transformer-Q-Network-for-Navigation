@@ -1,0 +1,258 @@
+\section{Draft}
+
+% \begin{algorithm}[!htb]
+% \caption{Adaptive Threat-Aware Visibility Estimation (ATAVE)}
+
+% \SetKwInput{KwInput}{Input}                % Set the Input
+% \SetKwInput{KwOutput}{Output}              % Set the Output
+% \SetKwComment{tcc}{/* }{ */}               % Comments styling
+
+% \DontPrintSemicolon
+%   \KwInput{Environment $\mathcal{E}$, discretized cells $\mathcal{C}$, robot position $r$, planned trajectory $\mathcal{T}$, cover map $\mathcal{M}_c$}
+%   \KwOutput{Cover-aware threat assessment $\phi(c_i, \mathcal{T})$ for each cell $c_i$}
+
+%   \BlankLine
+%   Initialize probabilistic threat model $p_t(c_i)$ for each cell $c_i$ \;
+%   Construct prioritized tree structure $\mathcal{T}$ based on threat probabilities \;
+  
+%   \BlankLine
+%   \ForEach{cell $c_i \in \mathcal{C}$}{
+%     Compute visibility $v(c_i, r)$ using LLA algorithm: \;
+%     \[
+%     v(c_i, r) = \text{LLA}(\mathcal{T}, c_i, r)
+%     \]
+%     Compute multi-perspective threat assessment $\tau(c_i, r)$: \;
+%     \[
+%     \tau(c_i, r) = \max_{v_j \in \mathcal{V}} v(c_i, v_j) \cdot p_t(v_j)
+%     \]
+%     Compute temporal visibility prediction $\rho(c_i, \mathcal{T})$: \;
+%     \[
+%     \rho(c_i, \mathcal{T}) = \max_{r_k \in \mathcal{T}} \tau(c_i, r_k) \cdot \gamma^k
+%     \]
+%     Compute cover-aware threat assessment $\phi(c_i, \mathcal{T})$: \;
+%     \[
+%     \phi(c_i, \mathcal{T}) = \rho(c_i, \mathcal{T}) \cdot (1 - \mathcal{M}_c(c_i))
+%     \]
+%   }
+
+%   \BlankLine
+%   \While{robot is navigating}{
+%     Update probabilistic threat model $p_t(c_i)$ based on new observations $o_t$: \;
+%     \[
+%     p_t(c_i) = \frac{p_{t-1}(c_i) \cdot p(o_t | c_i)}{\sum_{j=1}^{N} p_{t-1}(c_j) \cdot p(o_t | c_j)}
+%     \]
+%     Re-compute cover-aware threat assessment $\phi(c_i, \mathcal{T})$ for each cell $c_i$\;
+%     Select next action based on cover-aware threat assessment and navigation goal\;
+%   }
+% \end{algorithm}
+
+
+\begin{algorithm} % Span across both columns
+\caption{Adaptive Threat-Aware Visibility Estimation (ATAVE)}
+
+\SetKwInOut{Input}{Input}
+\SetKwInOut{Output}{Output}
+\SetKwFor{ForEach}{foreach}{do}{endfch}
+\SetKwIF{While}{ElseIf}{Else}{while}{do}{else if}{else}{endw}
+
+\Input{Environment $\mathcal{E}$, cells $\mathcal{C}$, robot pos. $r$, trajectory $\mathcal{T}$, cover map $\mathcal{M}_c$}
+\Output{Threat assessment $\phi(c_i, \mathcal{T})$ for each $c_i$}
+
+% Initial setup
+Initialize $p_t(c_i)$ for all $c_i$\;
+Build tree $\mathcal{T}$ from threat probabilities\;
+
+% Main computation loop
+\ForEach{$c_i \in \mathcal{C}$}{
+    Compute visibility $v(c_i, r)$ using LLA: $v(c_i, r) = \text{LLA}(\mathcal{T}, c_i, r)$\;
+    Assess threat $\tau(c_i, r)$: $\tau(c_i, r) = \max_{v_j} v(c_i, v_j) \cdot p_t(v_j)$\;
+    Predict visibility $\rho(c_i, \mathcal{T})$: $\rho(c_i, \mathcal{T}) = \max_{r_k} \tau(c_i, r_k) \cdot \gamma^k$\;
+    Evaluate threat $\phi(c_i, \mathcal{T})$: $\phi(c_i, \mathcal{T}) = \rho(c_i, \mathcal{T}) \cdot (1 - \mathcal{M}_c(c_i))$\;
+}
+
+% Update loop while navigating
+\While{robot is navigating}{
+    Update $p_t(c_i)$ with new data $o_t$: $p_t(c_i) = \frac{p_{t-1}(c_i) \cdot p(o_t | c_i)}{\sum p_{t-1}(c_j) \cdot p(o_t | c_j)}$\;
+    Recompute $\phi(c_i, \mathcal{T})$ for all $c_i$\;
+    Select next action based on $\phi(c_i, \mathcal{T})$\;
+}
+\end{algorithm}
+
+The ATAVE algorithm takes as input the environment $\mathcal{E}$, discretized cells $\mathcal{C}$, robot position $r$, planned trajectory $\mathcal{T}$, and cover map $\mathcal{M}_c$. It initializes the probabilistic threat model $p_t(c_i)$ for each cell $c_i$ and constructs a prioritized tree structure $\mathcal{T}$ based on the threat probabilities.
+For each cell $c_i$, the algorithm computes the visibility $v(c_i, r)$ using the LLA algorithm, which efficiently traverses the prioritized tree structure and performs late line-of-sight checks. It then computes the multi-perspective threat assessment $\tau(c_i, r)$ by considering the visibility from multiple vantage points and the probability of threats at each vantage point.
+The temporal visibility prediction $\rho(c_i, \mathcal{T})$ is calculated by considering the robot's planned trajectory and applying a discount factor to future time steps. Finally, the cover-aware threat assessment $\phi(c_i, \mathcal{T})$ is computed by integrating the temporal visibility prediction with the cover map, prioritizing cells that offer both low visibility to threats and high cover utilization.
+During navigation, the algorithm continuously updates the probabilistic threat model based on new observations and re-computes the cover-aware threat assessment for each cell. The robot selects its next action based on the cover-aware threat assessment and its navigation goal.
+The ATAVE algorithm provides an efficient and adaptive approach to covert navigation by incorporating probabilistic threat modeling, efficient visibility computation with LLA, multi-perspective threat assessment, temporal visibility prediction, and integration with cover utilization. This comprehensive framework enables autonomous robots to make informed decisions, minimize exposure to threats, and navigate covertly in complex environments.
+
+
+\subsection{Adaptive Threat-Aware Visibility Estimation (ATAVE)}
+\label{subsec:atave}
+
+The Adaptive Threat-Aware Visibility Estimation (ATAVE) algorithm is a pivotal component of the EnCoMP system, designed to optimize navigation strategies by dynamically assessing and mitigating potential threats in real-time. This subsection describes the implementation details and the operational mechanics of ATAVE within the context of autonomous robotic navigation.
+
+\subsubsection{Methodology}
+
+ATAVE integrates advanced sensing and data processing techniques to evaluate and adapt to the dynamic conditions of complex environments. The core functionality revolves around calculating threat levels for each segment of the robot's planned path and adjusting the trajectory to minimize exposure to risks while maximizing the usage of available cover.
+
+\paragraph{Input and Output Specifications}
+\begin{itemize}
+    \item \textbf{Inputs:}
+    \begin{itemize}
+        \item \textbf{Environment $\mathcal{E}$:} The operational area of the robot, encapsulating obstacles, terrain features, and potential concealment spots.
+        \item \textbf{Cells $\mathcal{C}$:} A discretized representation of $\mathcal{E}$, partitioned into cells, each with distinct environmental characteristics.
+        \item \textbf{Robot Position $r$:} The current coordinate of the robot within $\mathcal{E}$.
+        \item \textbf{Trajectory $\mathcal{T}_{path}$:} The intended navigation route of the robot.
+        \item \textbf{Cover Map $\mathcal{M}_c$:} A strategic map highlighting areas providing cover from potential threats.
+    \end{itemize}
+    \item \textbf{Outputs:}
+    \begin{itemize}
+        \item \textbf{Threat Assessment $\phi(c_i, \mathcal{T}_{path})$:} A risk level for each cell $c_i$ along $\mathcal{T}_{path}$, indicating the safety of the proposed path segments.
+    \end{itemize}
+\end{itemize}
+
+\paragraph{Operational Steps}
+The ATAVE algorithm processes its inputs through several computational steps to produce a navigational strategy that is both safe and efficient:
+
+\begin{enumerate}
+    \item \textbf{Initialization:} Establish a probabilistic threat model $p_t(c_i)$ for each cell based on historical data and current observations to evaluate the likelihood of encountering threats.
+    \item \textbf{Threat Assessment:} Utilize visibility algorithms and the cover map to compute the exposure of each path segment, adjusting the trajectory to avoid high-risk areas.
+\end{enumerate}
+
+\subsubsection{Algorithm}
+The pseudocode below outlines the operational logic of the ATAVE algorithm, detailing its computational framework:
+
+\begin{algorithm}
+\caption{Adaptive Threat-Aware Visibility Estimation (ATAVE)}
+\label{alg:atave}
+\SetAlgoLined
+\KwData{Environment $\mathcal{E}$, cells $\mathcal{C}$, robot position $r$, trajectory $\mathcal{T}_{path}$, cover map $\mathcal{M}_c$}
+\KwResult{Threat assessment $\phi(c_i, \mathcal{T}_{path})$ for each $c_i$}
+
+\textbf{Initialize:} $p_t(c_i)$ for all $c_i$\;
+\textbf{Build Tree:} $\mathcal{T}_{tree}$ from threat probabilities\;
+
+\ForEach{$c_i \in \mathcal{C}$}{
+    Compute visibility $v(c_i, r)$ using LLA: $v(c_i, r) = \text{LLA}(\mathcal{T}_{tree}, c_i, r)$\;
+    Assess threat $\tau(c_i, r)$: $\tau(c_i, r) = \max_{v_j} v(c_i, v_j) \cdot p_t(v_j)$\;
+    Predict visibility $\rho(c_i, \mathcal{T}_{path})$: $\rho(c_i, \mathcal{T}_{path}) = \max_{r_k} \tau(c_i, r_k) \cdot \gamma^k$\;
+    Evaluate threat $\phi(c_i, \mathcal{T}_{path})$: $\phi(c_i, \mathcal{T}_{path}) = \rho(c_i, \mathcal{T}_{path}) \cdot (1 - \mathcal{M}_c(c_i))$\;
+}
+
+\While{robot is navigating}{
+    Update $p_t(c_i)$ with new data $o_t$: $p_t(c_i) = \frac{p_{t-1}(c_i) \cdot p(o_t | c_i)}{\sum_{c_j \in \mathcal{C}} p_{t-1}(c_j) \cdot p(o_t | c_j)}$\;
+    Recompute $\phi(c_i, \mathcal{T}_{path})$ for all $c_i$\;
+    Select next action based on $\phi(c_i, \mathcal{T}_{path})$\;
+}
+\end{algorithm}
+
+The ATAVE algorithm enhances the robot’s ability to navigate covertly by dynamically adapting to evolving environmental and threat conditions, ensuring optimal path selection and strategic cover utilization.
+--------------------------------------------------------
+
+Proposition 1 (Optimality of Adaptive Threat-Aware Visibility Estimation):
+The Adaptive Threat-Aware Visibility Estimation (ATAVE) algorithm used in EnCoMP provides an optimal estimate of the threat exposure for a given robot position and trajectory, under the following assumptions:
+
+The probabilistic threat model $p_t(c_i)$ accurately captures the likelihood of threats in each cell $c_i$ at time $t$.
+The visibility computation using the Late Line-of-Sight Check and Prioritized Tree Structures (LLA) is accurate and efficient.
+The multi-perspective threat assessment considers all relevant vantage points for estimating the robot's exposure to threats.
+
+Proof:
+Let $\mathcal{E}$ denote the environment, discretized into a grid of cells $\mathcal{C} = {c_1, c_2, \ldots, c_N}$. The probabilistic threat model $p_t(c_i)$ represents the likelihood of a threat being present in cell $c_i$ at time $t$. The visibility of a cell $c_i$ from the robot's position $r$ is computed using the LLA algorithm:
+\begin{equation}
+v(c_i, r) = \text{LLA}(\mathcal{T}, c_i, r)
+\end{equation}
+where $\mathcal{T}$ is the prioritized tree structure representing the environment, and $\text{LLA}(\cdot)$ is the LLA function that computes visibility.
+The multi-perspective threat assessment $\tau(c_i, r)$ of cell $c_i$ from the robot's position $r$ is given by:
+\begin{equation}
+\tau(c_i, r) = \max_{v_j \in \mathcal{V}} v(c_i, v_j) \cdot p_t(v_j)
+\end{equation}
+where $\mathcal{V} = {v_1, v_2, \ldots, v_M}$ is the set of vantage points representing potential threat perspectives.
+The temporal visibility prediction $\rho(c_i, \mathcal{T}{path})$ of cell $c_i$ along the robot's planned trajectory $\mathcal{T}{path} = {r_1, r_2, \ldots, r_K}$ is computed as:
+\begin{equation}
+\rho(c_i, \mathcal{T}{path}) = \max{r_k \in \mathcal{T}_{path}} \tau(c_i, r_k) \cdot \gamma^k
+\end{equation}
+where $\gamma \in [0, 1]$ is a discount factor that assigns lower weights to future time steps.
+The cover-aware threat assessment $\phi(c_i, \mathcal{T}{path})$ of cell $c_i$ along the trajectory $\mathcal{T}{path}$ is given by:
+\begin{equation}
+\phi(c_i, \mathcal{T}{path}) = \rho(c_i, \mathcal{T}{path}) \cdot (1 - \mathcal{M}_c(c_i))
+\end{equation}
+where $\mathcal{M}_c(c_i)$ is the cover density of cell $c_i$ obtained from the cover map.
+Under the given assumptions, the ATAVE algorithm computes the optimal cover-aware threat assessment for each cell along the robot's trajectory. The probabilistic threat model accurately captures the likelihood of threats, the LLA algorithm efficiently computes visibility, and the multi-perspective threat assessment considers all relevant vantage points. By combining these components, ATAVE provides an optimal estimate of the threat exposure for each cell.
+
+Let $\phi^(c_i, \mathcal{T}{path})$ denote the optimal cover-aware threat assessment for cell $c_i$ along trajectory $\mathcal{T}{path}$. We claim that the ATAVE algorithm computes $\phi(c_i, \mathcal{T}_{path}) = \phi^(c_i, \mathcal{T}_{path})$ for all cells $c_i \in \mathcal{C}$.
+
+Proof by contradiction: Suppose there exists a cell $c_j$ for which $\phi(c_j, \mathcal{T}{path}) \neq \phi^*(c_j, \mathcal{T}{path})$. This implies that either the visibility computation, the multi-perspective threat assessment, or the cover-aware threat assessment is suboptimal for cell $c_j$.
+
+Case 1: If the visibility computation is suboptimal, then $v(c_j, r) \neq v^(c_j, r)$, where $v^(c_j, r)$ is the true visibility of cell $c_j$ from position $r$. However, this contradicts assumption 2, which states that the LLA algorithm accurately computes visibility.
+
+Case 2: If the multi-perspective threat assessment is suboptimal, then $\tau(c_j, r) \neq \tau^(c_j, r)$, where $\tau^(c_j, r)$ is the true multi-perspective threat assessment of cell $c_j$ from position $r$. This implies that either the probabilistic threat model is inaccurate or the set of vantage points is incomplete. However, this contradicts assumptions 1 and 3, which state that the probabilistic threat model accurately captures the likelihood of threats and the multi-perspective threat assessment considers all relevant vantage points.
+
+Case 3: If the cover-aware threat assessment is suboptimal, then $\phi(c_j, \mathcal{T}{path}) \neq \phi^*(c_j, \mathcal{T}{path})$. This implies that either the temporal visibility prediction or the cover density computation is inaccurate. However, this contradicts the optimality of the temporal visibility prediction based on the multi-perspective threat assessment and the accuracy of the cover map.
+
+In all three cases, we reach a contradiction, implying that our initial assumption must be false. Therefore, the ATAVE algorithm computes the optimal cover-aware threat assessment for all cells along the robot's trajectory, providing an optimal estimate of the threat exposure.
+This proof demonstrates the optimality of the Adaptive Threat-Aware Visibility Estimation algorithm in estimating threat exposure for covert navigation, based on the assumptions of accurate probabilistic threat modeling, efficient visibility computation, and comprehensive multi-perspective threat assessment.
+
+---------------------------
+Proposition 1 (Correctness of Cover-Aware Threat Assessment):
+The cover-aware threat assessment formula used in the Adaptive Threat-Aware Visibility Estimation (ATAVE) algorithm of EnCoMP correctly combines the temporal visibility prediction and the cover density to estimate the threat exposure along a given trajectory.
+
+Proof:
+Let $\phi(c_i, \mathcal{T})$ denote the cover-aware threat assessment of cell $c_i$ along trajectory $\mathcal{T}$, $\rho(c_i, \mathcal{T})$ be the temporal visibility prediction of cell $c_i$ along trajectory $\mathcal{T}$, and $\mathcal{M}_c(c_i)$ be the cover density of cell $c_i$.
+The cover-aware threat assessment formula in ATAVE is given by:
+\begin{equation}
+\phi(c_i, \mathcal{T}) = \rho(c_i, \mathcal{T}) \cdot (1 - \mathcal{M}_c(c_i))
+\end{equation}
+To prove the correctness of this formula, we need to show that it satisfies the following properties:
+
+$\phi(c_i, \mathcal{T}) \in [0, 1]$, representing a valid probability.
+$\phi(c_i, \mathcal{T})$ increases with higher temporal visibility prediction $\rho(c_i, \mathcal{T})$.
+$\phi(c_i, \mathcal{T})$ decreases with higher cover density $\mathcal{M}_c(c_i)$.
+
+Property 1 holds because both $\rho(c_i, \mathcal{T})$ and $\mathcal{M}_c(c_i)$ are in the range $[0, 1]$, and the product of two values in $[0, 1]$ is also in $[0, 1]$.
+
+Property 2 holds because $\phi(c_i, \mathcal{T})$ is directly proportional to $\rho(c_i, \mathcal{T})$, meaning that as $\rho(c_i, \mathcal{T})$ increases, $\phi(c_i, \mathcal{T})$ also increases.
+
+Property 3 holds because $\phi(c_i, \mathcal{T})$ is inversely proportional to $\mathcal{M}_c(c_i)$, meaning that as $\mathcal{M}_c(c_i)$ increases, $\phi(c_i, \mathcal{T})$ decreases.
+
+Therefore, the cover-aware threat assessment formula correctly combines the temporal visibility prediction and the cover density to estimate the threat exposure along a given trajectory.
+
+
+------------------------------------
+
+
+Proposition 1 (Bound on the Cover-Aware Threat Assessment):
+
+Let $\phi(c_i, \mathcal{T})$ be the cover-aware threat assessment of cell $c_i$ along trajectory $\mathcal{T}$, as defined in the Adaptive Threat-Aware Visibility Estimation (ATAVE) algorithm of EnCoMP. Then, the cover-aware threat assessment is bounded by the temporal visibility prediction and the inverse of the cover density:
+\begin{equation}
+0 \leq \phi(c_i, \mathcal{T}) \leq \rho(c_i, \mathcal{T}) \cdot (1 - \mathcal{M}_c(c_i))
+\end{equation}
+where $\rho(c_i, \mathcal{T})$ is the temporal visibility prediction of cell $c_i$ along trajectory $\mathcal{T}$, and $\mathcal{M}_c(c_i)$ is the cover density of cell $c_i$.
+Proof:
+The cover-aware threat assessment is defined as:
+\begin{equation}
+\phi(c_i, \mathcal{T}) = \rho(c_i, \mathcal{T}) \cdot (1 - \mathcal{M}_c(c_i))
+\end{equation}
+First, we prove the lower bound:
+\begin{equation}
+\phi(c_i, \mathcal{T}) = \rho(c_i, \mathcal{T}) \cdot (1 - \mathcal{M}_c(c_i))
+\end{equation}
+Since $\rho(c_i, \mathcal{T}) \geq 0$ and $0 \leq \mathcal{M}_c(c_i) \leq 1$, we have:
+\begin{equation}
+\phi(c_i, \mathcal{T}) \geq 0
+\end{equation}
+Next, we prove the upper bound:
+\begin{equation}
+\phi(c_i, \mathcal{T}) = \rho(c_i, \mathcal{T}) \cdot (1 - \mathcal{M}_c(c_i))
+\end{equation}
+Since $0 \leq \mathcal{M}_c(c_i) \leq 1$, we have:
+\begin{equation}
+1 - \mathcal{M}_c(c_i) \leq 1
+\end{equation}
+Therefore:
+\begin{equation}
+\phi(c_i, \mathcal{T}) \leq \rho(c_i, \mathcal{T}) \cdot (1 - \mathcal{M}_c(c_i))
+\end{equation}
+Combining the lower and upper bounds, we obtain:
+\begin{equation}
+0 \leq \phi(c_i, \mathcal{T}) \leq \rho(c_i, \mathcal{T}) \cdot (1 - \mathcal{M}_c(c_i))
+\end{equation}
+This proposition provides a simple and relevant bound on the cover-aware threat assessment, a key component of the ATAVE algorithm in the EnCoMP framework. The bound shows that the cover-aware threat assessment is always non-negative and upper-bounded by the product of the temporal visibility prediction and the inverse of the cover density.

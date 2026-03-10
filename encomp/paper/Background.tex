@@ -1,0 +1,70 @@
+\section{Background}
+\label{background}
+In this section, we present our problem formulation and provide a concise overview of the offline reinforcement learning framework utilized for policy learning. We also detail the symbols and notations summarized in Table \ref{tab:symbols_definitions}.
+
+\subsection{Problem Formulation}
+% We formulate the covert navigation problem as a Markov Decision Process (MDP) defined by the tuple $(\mathcal{S}, \mathcal{A}, \mathcal{P}, \mathcal{R}, \gamma)$, where $\mathcal{S}$ is the state space, $\mathcal{A}$ is the action space, $\mathcal{P}$ is the transition probability function, $\mathcal{R}$ is the reward function, and $\gamma$ is the discount factor. The state space $\mathcal{S}$ includes the robot's position $\mathbf{s}_r \in \mathbb{R}^2$, the goal position $\mathbf{s}_g \in \mathbb{R}^2$, the height map $\mathbf{H} \in \mathbb{R}^{M \times N}$, the cover map $\mathbf{C} \in \mathbb{R}^{M \times N}$, and the threat map $\mathbf{T} \in \mathbb{R}^{M \times N}$, where $M$ and $N$ are the dimensions of the maps. The height map represents the elevation of the terrain, the cover map indicates the presence and quality of cover objects, and the threat map represents the estimated positions and line-of-sight of potential threats in the environment.
+% The action space $\mathcal{A}$ consists of the robot's navigation actions, such as moving forward, turning left, turning right, or staying in place. The transition probability function $\mathcal{P}(s' \mid s, a)$ defines the probability of transitioning from state $s$ to state $s'$ when taking action $a$. The reward function $\mathcal{R}(s, a)$ assigns a scalar value to each state-action pair, taking into account the robot's distance to the goal, the level of cover utilized, and the exposure to potential threats. The reward function is designed to encourage the robot to reach the goal efficiently while maximizing the use of cover and minimizing the risk of being detected by threats. The discount factor $\gamma \in [0, 1]$ determines the importance of future rewards compared to immediate rewards. The objective is to learn an optimal policy $\pi^*: \mathcal{S} \rightarrow \mathcal{A}$ that maximizes the expected cumulative discounted reward:
+
+% \begin{equation}
+% \pi^* = \arg\max_{\pi} \mathbb{E}_{\pi} \left[ \sum_{t=0}^{\infty} \gamma^t r_t \right]
+% \end{equation}
+
+
+% where $r_t$ is the reward received at time step $t$.
+
+
+We formulate the covert navigation problem as a Markov Decision Process (MDP) defined by the tuple $(\mathcal{S}, \mathcal{A}, P, R, \gamma)$, where $\mathcal{S}$ is the state space, $\mathcal{A}$ is the action space, $P$ is the transition probability function, $R$ is the reward function, and $\gamma$ is the discount factor. The state space $\mathcal{S}$ includes the robot's position $s_r \in \mathbb{R}^2$, the goal position $s_g \in \mathbb{R}^2$, the height map $H \in \mathbb{R}^{M \times N}$, the cover map $C \in \mathbb{R}^{M \times N}$, and the threat map $T \in \mathbb{R}^{M \times N}$, where $M$ and $N$ are the dimensions of the maps. The action space $\mathcal{A}$ consists of continuous robot navigation actions, such as linear and angular velocities. The transition probability function $P(s' | s, a)$ defines the probability of transitioning from state $s$ to state $s'$ when taking action $a$. The reward function $R(s, a)$ assigns a scalar value to each state-action pair, taking into account the robot's distance to the goal, the level of cover utilized, and the exposure to potential threats. The discount factor $\gamma \in [0, 1]$ determines the importance of future rewards compared to immediate rewards.
+The objective is to learn an optimal policy $\pi^*: \mathcal{S} \rightarrow \mathcal{A}$ that maximizes the expected cumulative discounted reward:
+
+
+\begin{equation}
+\pi^* = \argmax_{\pi} \mathbb{E}^\pi \left[ \sum_{t=0}^{\infty} \gamma^t r_t \right]
+\end{equation}
+
+
+where $r_t$ is the reward received at time step $t$. \textit{EnCoMP} learns this optimal policy using offline reinforcement learning, specifically Conservative Q-Learning (CQL) ~\cite{kumar2020conservative}, which addresses the challenges of learning from a fixed dataset while ensuring conservative behavior when encountering novel or underrepresented state-action pairs during deployment.
+
+\begin{table}[ht]
+\centering
+
+\begin{tabular}{|c|p{6cm}|}
+\hline
+\textbf{Symbol} & \textbf{Definition} \\ \hline
+$\lambda_c$ & Weight for cover utilization reward \\ \hline
+$\lambda_t$ & Weight for threat exposure penalty \\ \hline
+$\lambda_g$ & Weight for goal-reaching reward \\ \hline
+$\lambda_o$ & Weight for collision avoidance penalty \\ \hline
+$r$ & Robot position \\ \hline
+$c_i$ & Cell in the environment \\ \hline
+$\mathcal{C}$ & Set of all cells in the environment \\ \hline
+$\mathcal{T}_{path}$ & Planned trajectory \\ \hline
+$\mathcal{M}_c$ & Cover map \\ \hline
+$\mathcal{M}_g$ & Goal map \\ \hline
+$p_t(c_i)$ & Probabilistic threat model for cell $c_i$ \newline at time $t$ \\ \hline
+$v(c_i, r)$ & Visibility of cell $c_i$ from position $r$ \\ \hline
+$\tau(c_i, r)$ & Multi-perspective threat assessment of \newline cell $c_i$ from position $r$ \\ \hline
+$\rho(c_i, \mathcal{T}_{path})$ & Temporal visibility prediction of \newline cell $c_i$ along trajectory $\mathcal{T}_{path}$ \\ \hline
+$\phi(c_i, \mathcal{T}_{path})$ & Cover-aware threat assessment of \newline cell $c_i$ along trajectory $\mathcal{T}_{path}$ \\ \hline
+\end{tabular}
+\caption{List of symbols used in our approach}
+\label{tab:symbols_definitions}
+\end{table}
+
+
+\subsection{Offline Reinforcement Learning}
+
+% In our covert navigation problem, we aim to learn a policy that maximizes the expected cumulative reward while the agent navigates environments containing height maps, cover maps, and threat maps. Due to the time-consuming, costly, and potentially dangerous nature of training a robot in real-world environments, we adopt an offline reinforcement learning (RL) approach \cite{offlineRLsurvey}. Offline RL algorithms enable policy learning from a pre-collected dataset, eliminating the need for further environmental interaction. We consider a dataset $\mathcal{D} = {(\mathbf{s}_j, \mathbf{a}_j, r_j, \mathbf{s}'_j) \mid j = 1, 2, \ldots, N}$, where $\mathbf{s}_j, \mathbf{s}'_j \in \mathcal{S}$ represent states, $\mathbf{a}j \in \mathcal{A}$ denote actions, and $r_j \in \mathbb{R}$ are rewards. Our aim is to derive a policy $\pi\theta(\mathbf{a} \mid \mathbf{s})$, parameterized by $\theta$, that optimizes the expected cumulative discounted reward:
+
+% \begin{equation}
+% \mathbb{E}{\pi\theta} \left[ \sum_{t=0}^{T} \gamma^t r_t \right]
+% \end{equation}
+
+% Here, $\gamma \in [0, 1]$ is the discount factor and $T$ is the horizon.
+
+% . However, direct application of standard RL algorithms to offline datasets often leads to poor performance due to challenges like distributional shift and extrapolation error \cite{offlineRLchallenges}. Distributional shift occurs when the state-action distribution in the dataset differs from that encountered during the learned policy's execution, leading to overestimated Q-values for out-of-distribution actions. Extrapolation error arises when the learned Q-function is asked to make predictions for state-action pairs poorly represented in the dataset.
+
+% To address these challenges, we employ the Conservative Q-Learning (CQL) algorithm \cite{CQL}. CQL is an off-policy method that learns a conservative estimate of the Q-function by incorporating a regularization term. This term encourages the Q-function to assign lower values to out-of-distribution actions, thus mitigating overestimation bias.
+In the context of our covert navigation problem, we face the challenge of learning an effective policy from a fixed dataset without further interaction with the environment. While offline reinforcement learning offers a promising approach, directly applying standard reinforcement learning algorithms to offline datasets can lead to suboptimal performance. This is due to several factors, such as the mismatch between the distribution of states and actions in the dataset and the distribution induced by the learned policy, as well as the potential for overestimation of Q-values for unseen state-action pairs ~\cite{prudencio2023survey}.
+
+To address these challenges, we employ the Conservative Q-Learning (CQL) algorithm ~\cite{kumar2020conservative} as our offline reinforcement learning method. CQL is an off-policy algorithm that aims to learn a conservative estimate of the Q-function by incorporating a regularization term in the training objective. The key idea behind CQL is to encourage the learned Q-function to assign lower values to unseen or out-of-distribution actions while still accurately fitting the Q-values for actions observed in the dataset. The CQL algorithm modifies the standard Q-learning objective by adding a regularization term that penalizes overestimation of Q-values. This regularization term is based on the difference between the expected Q-value under the learned policy and the expected Q-value under the behavior policy used to collect the dataset. By minimizing this difference, CQL encourages the learned Q-function to be conservative in its estimates, especially for state-action pairs that are not well-represented in the dataset.
