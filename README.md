@@ -1,6 +1,6 @@
 # HAVEN: Hierarchical Adversary-aware Visibility-Enabled Navigation with Cover Utilization using Deep Transformer Q-Networks
 
-[![Paper](https://img.shields.io/badge/Paper-PDF-red)](paper.tex)
+[![Paper](https://img.shields.io/badge/Paper-PDF-red)](https://arxiv.org/abs/2512.00592)
 
 **Authors:** [Mihir Chauhan](mailto:chauhanm@purdue.edu)¹, [Damon Conover](mailto:damon.m.conover.civ@army.mil)², [Aniket Bera](mailto:aniketbera@purdue.edu)¹
 
@@ -20,22 +20,10 @@ Autonomous navigation in partially observable environments requires agents to re
 ## Architecture
 
 <p align="center">
-  <img src="assets/architecture.png" alt="HAVEN Architecture" width="600"/>
+  <img src="assets/architecture.jpeg" alt="HAVEN Architecture" width="800"/>
 </p>
 
 **Hierarchical framework.** The high-level DTQN consumes perception and odometry, ranks candidate subgoals via Q-values (with k-step memory), and selects a subgoal. The low-level potential field controller executes trajectories with obstacle avoidance, enemy evasion, and anticipatory safety.
-
----
-
-## Visualizations
-
-<p align="center">
-  <img src="figures/chauh1.png" alt="Architecture" width="280"/> &nbsp;
-  <img src="figures/chauh3.png" alt="2D Environment" width="280"/> &nbsp;
-  <img src="figures/chauh4.png" alt="3D Pipeline" width="280"/>
-</p>
-
-*Left:* Hierarchical architecture. *Center:* 2D training environment with enemies (red) and navigating agent (blue). *Right:* 3D Unity–ROS pipeline (point cloud → 2D projection → DTQN → ROS commands).
 
 ---
 
@@ -122,7 +110,7 @@ If you use this code or the paper, please cite:
 @inproceedings{haven2026,
   title={HAVEN: Hierarchical Adversary-aware Visibility-Enabled Navigation with Cover Utilization using Deep Transformer Q-Networks},
   author={Chauhan, Mihir and Conover, Damon and Bera, Aniket},
-  booktitle={IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS)},
+  booktitle={IEEE International Conference on Robotics and Automation (ICRA)},
   year={2026}
 }
 ```
